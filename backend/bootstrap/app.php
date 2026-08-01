@@ -15,6 +15,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'admin' => EnsureAdmin::class,
+            'webhook.signature' => \App\Http\Middleware\VerifyWebhookSignature::class,
+            'warden_or_uwa' => \App\Http\Middleware\EnsureWardenOrUwaOfficial::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

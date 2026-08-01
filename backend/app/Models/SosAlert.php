@@ -13,6 +13,7 @@ class SosAlert extends Model
     protected $fillable = [
         'reported_by', 'park_id', 'emergency_type', 'description',
         'latitude', 'longitude', 'status', 'resolved_at',
+        'firestore_doc_id', 'source_system',
     ];
 
     protected $casts = [

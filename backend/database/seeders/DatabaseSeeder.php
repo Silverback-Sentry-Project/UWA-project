@@ -65,5 +65,7 @@ class DatabaseSeeder extends Seeder
         if (! $admin->roles->contains($adminRole->role_id)) {
             $admin->roles()->attach($adminRole->role_id);
         }
+
+        $this->call(BridgeFixturesSeeder::class);
     }
 }

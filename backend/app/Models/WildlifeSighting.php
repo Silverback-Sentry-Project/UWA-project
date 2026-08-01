@@ -12,6 +12,7 @@ class WildlifeSighting extends Model
 
     protected $fillable = [
         'ranger_id', 'species_id', 'park_id', 'latitude', 'longitude', 'number_seen', 'notes',
+        'firestore_doc_id', 'source_system', 'approval_status',
     ];
 
     protected $casts = ['sighting_time' => 'datetime'];

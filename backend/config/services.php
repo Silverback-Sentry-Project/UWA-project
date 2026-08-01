@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'firebase_bridge' => [
+        'secret' => env('FIREBASE_BRIDGE_SECRET'),
+    ],
+
 ];
