@@ -1,6 +1,58 @@
 {
   "$schema": "./seed-shared-fixtures.schema.json",
-  "version": 1,
+  "version": 2,
+  "parks": [
+    {
+      "firestore_id": "bwindi-impenetrable",
+      "mysql_name": "Bwindi Impenetrable National Park",
+      "district": "Kanungu"
+    },
+    {
+      "firestore_id": "mgahinga-gorilla",
+      "mysql_name": "Mgahinga Gorilla National Park",
+      "district": "Kisoro"
+    },
+    {
+      "firestore_id": "queen-elizabeth",
+      "mysql_name": "Queen Elizabeth National Park",
+      "district": "Kasese"
+    },
+    {
+      "firestore_id": "murchison-falls",
+      "mysql_name": "Murchison Falls National Park",
+      "district": "Masindi"
+    },
+    {
+      "firestore_id": "kibale",
+      "mysql_name": "Kibale National Park",
+      "district": "Kabarole"
+    },
+    {
+      "firestore_id": "semuliki",
+      "mysql_name": "Semuliki National Park",
+      "district": "Bundibugyo"
+    },
+    {
+      "firestore_id": "rwenzori-mountains",
+      "mysql_name": "Rwenzori Mountains National Park",
+      "district": "Kasese"
+    },
+    {
+      "firestore_id": "lake-mburo",
+      "mysql_name": "Lake Mburo National Park",
+      "district": "Kiruhura"
+    },
+    {
+      "firestore_id": "kidepo-valley",
+      "mysql_name": "Kidepo Valley National Park",
+      "district": "Kaabong"
+    },
+    {
+      "firestore_id": "mount-elgon",
+      "mysql_name": "Mount Elgon National Park",
+      "district": "Mbale"
+    }
+  ],
   "park": {
     "firestore_id": "bwindi-impenetrable",
     "mysql_name": "Bwindi Impenetrable National Park",
@@ -11,6 +63,7 @@
       "email": "ranger@wildwatch.app",
       "password": "password123",
       "display_name": "John Ranger",
+      "firebase_uid": "uid-bridge-ranger-bwindi",
       "firebase_role": "ranger",
       "laravel_roles": ["Ranger"],
       "park_id": "bwindi-impenetrable"
@@ -19,6 +72,7 @@
       "email": "warden@wildwatch.app",
       "password": "password123",
       "display_name": "Alice Warden",
+      "firebase_uid": "uid-bridge-warden-bwindi",
       "firebase_role": "warden",
       "laravel_roles": ["Park Warden"],
       "park_id": "bwindi-impenetrable"
@@ -27,6 +81,7 @@
       "email": "official@wildwatch.app",
       "password": "password123",
       "display_name": "Bob Official",
+      "firebase_uid": "uid-bridge-official-uwa",
       "firebase_role": "uwa_official",
       "laravel_roles": ["UWA Official"],
       "park_id": null
@@ -35,6 +90,7 @@
       "email": "tourist@gmail.com",
       "password": "password123",
       "display_name": "Tom Tourist",
+      "firebase_uid": "uid-bridge-tourist-public",
       "firebase_role": "public",
       "laravel_roles": ["Community Member"],
       "park_id": null

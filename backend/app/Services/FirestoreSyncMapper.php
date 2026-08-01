@@ -28,6 +28,16 @@ class FirestoreSyncMapper
                 $data['locationName'] ?? null,
                 $data['village'] ?? null,
             ]),
+            'district' => $this->firstNonEmpty([
+                $data['district'] ?? null,
+            ]),
+            'sub_county' => $this->firstNonEmpty([
+                $data['sub_county'] ?? null,
+                $data['subCounty'] ?? null,
+            ]),
+            'parish' => $this->firstNonEmpty([
+                $data['parish'] ?? null,
+            ]),
             'status' => $this->mapIncidentStatus($data['status'] ?? null),
         ];
     }

@@ -51,11 +51,19 @@ class BridgeFixturesSeeder extends Seeder
                 ],
             );
 
+            if (! empty($fixture['firebase_uid'])) {
+                $user->update(['firebase_uid' => $fixture['firebase_uid']]);
+            }
+
             foreach ($fixture['laravel_roles'] as $roleName) {
                 $role = Role::where('role_name', $roleName)->first();
                 if ($role && ! $user->roles->contains($role->role_id)) {
                     $user->roles()->attach($role->role_id);
                 }
+            }
+
+            if (! empty($fixture['park_id']) && $fixture['park_id'] === ($fixtures['park']['firestore_id'] ?? null)) {
+                $user->update(['park_id' => $park->park_id]);
             }
         }
 

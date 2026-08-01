@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Route;
 
 // Public
 Route::post('/login', [AuthController::class, 'login']);
+Route::get('/public/parks', [ParkController::class, 'publicIndex']);
 
 // Firebase → Laravel bridge (HMAC-protected, outside Sanctum)
 Route::middleware('webhook.signature')->prefix('webhooks')->group(function () {
