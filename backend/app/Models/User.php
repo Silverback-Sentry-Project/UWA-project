@@ -17,7 +17,7 @@ class User extends Authenticatable
     protected $fillable = [
         'first_name', 'last_name', 'phone_number', 'email',
         'password_hash', 'preferred_language', 'account_status',
-        'email_verified', 'phone_verified',
+        'email_verified', 'phone_verified', 'firebase_uid',
     ];
 
     protected $hidden = ['password_hash'];

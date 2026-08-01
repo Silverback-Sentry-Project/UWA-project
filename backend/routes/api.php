@@ -25,6 +25,7 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/parks', [ParkController::class, 'index']);
     Route::get('/species', [SpeciesController::class, 'index']);
     Route::get('/rangers', [RangerController::class, 'index']);
+    Route::post('/rangers', [RangerController::class, 'store']);
     Route::get('/audit', [AuditController::class, 'index']);
 
     Route::get('/incidents', [IncidentController::class, 'index']);
