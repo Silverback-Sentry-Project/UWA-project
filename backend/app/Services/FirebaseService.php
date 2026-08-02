@@ -82,4 +82,58 @@ class FirebaseService
 
         return $uid;
     }
+
+    /**
+     * Merge portal-originated fields into a Firestore incident document.
+     *
+     * @param  array<string, mixed>  $fields
+     */
+    public function syncIncidentDocument(string $firestoreDocId, array $fields): void
+    {
+        $payload = array_merge($fields, [
+            'source_system' => 'laravel',
+            'updated_at' => new \DateTime(),
+        ]);
+
+        $this->firestore->database()
+            ->collection('incidents')
+            ->document($firestoreDocId)
+            ->set($payload, ['merge' => true]);
+    }
+
+    /**
+     * Merge portal-originated fields into a Firestore sighting document.
+     *
+     * @param  array<string, mixed>  $fields
+     */
+    public function syncSightingDocument(string $firestoreDocId, array $fields): void
+    {
+        $payload = array_merge($fields, [
+            'source_system' => 'laravel',
+            'updated_at' => new \DateTime(),
+        ]);
+
+        $this->firestore->database()
+            ->collection('sightings')
+            ->document($firestoreDocId)
+            ->set($payload, ['merge' => true]);
+    }
+
+    /**
+     * Publish a news article to the Firestore community feed.
+     *
+     * @param  array<string, mixed>  $fields
+     */
+    public function syncFeedArticle(string $firestoreDocId, array $fields): void
+    {
+        $payload = array_merge($fields, [
+            'source_system' => 'laravel',
+            'updated_at' => new \DateTime(),
+        ]);
+
+        $this->firestore->database()
+            ->collection('feed')
+            ->document($firestoreDocId)
+            ->set($payload, ['merge' => true]);
+    }
 }

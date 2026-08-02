@@ -1,8 +1,10 @@
 // Thin fetch wrapper around the WildWatch Admin API (Laravel + Sanctum).
-// Configure the API origin with VITE_API_URL in a .env file, e.g.
-//   VITE_API_URL=http://localhost:8000/api
+// Set VITE_API_URL=auto in .env to derive the API host from window.location.hostname
+// (LAN-friendly). Or set an explicit URL, e.g. VITE_API_URL=http://192.168.1.42:8000/api
 
-const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "http://localhost:8000/api";
+import { resolveApiBase } from "./api-base";
+
+const API_BASE = resolveApiBase();
 const TOKEN_KEY = "wildwatch_admin_token";
 
 export function getToken(): string | null {

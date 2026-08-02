@@ -64,8 +64,9 @@ class RangerController extends Controller
                 $user->roles()->attach($rangerRole->role_id);
             }
 
+            $firebaseUid = null;
+
             try {
-                // 3. Sync to Firebase
                 $firebaseUid = $this->firebase->createRangerAccount(
                     $request->email,
                     $request->password,
@@ -73,13 +74,17 @@ class RangerController extends Controller
                     $request->park_id
                 );
 
-                // 4. Update MySQL User with Firebase UID
                 $user->update(['firebase_uid' => $firebaseUid]);
+            } catch (\Throwable $e) {
+                if (isset($firebaseUid)) {
+                    try {
+                        $this->firebase->auth()->deleteUser($firebaseUid);
+                    } catch (\Throwable) {
+                        // Best-effort cleanup; MySQL transaction still rolls back.
+                    }
+                }
 
-            } catch (\Exception $e) {
-                // If Firebase fails, the DB transaction will rollback automatically
-                // but we should probably log the error and return a useful response.
-                throw new \Exception("Firebase synchronization failed: " . $e->getMessage());
+                throw new \RuntimeException('Firebase synchronization failed: '.$e->getMessage(), 0, $e);
             }
 
             return response()->json($user->load('roles'), 201);

@@ -17,7 +17,7 @@ class User extends Authenticatable
     protected $fillable = [
         'first_name', 'last_name', 'phone_number', 'email',
         'password_hash', 'preferred_language', 'account_status',
-        'email_verified', 'phone_verified', 'firebase_uid',
+        'email_verified', 'phone_verified', 'firebase_uid', 'park_id',
     ];
 
     protected $hidden = ['password_hash'];
@@ -54,6 +54,16 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->hasRole('System Administrator');
+    }
+
+    public function isGamepark(): bool
+    {
+        return $this->hasRole('Gamepark Officer') && $this->park_id !== null;
+    }
+
+    public function park()
+    {
+        return $this->belongsTo(Park::class, 'park_id', 'park_id');
     }
 
     public function getFullNameAttribute(): string

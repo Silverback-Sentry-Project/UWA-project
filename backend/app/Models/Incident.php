@@ -12,7 +12,8 @@ class Incident extends Model
 
     protected $fillable = [
         'reported_by', 'park_id', 'incident_type', 'description',
-        'latitude', 'longitude', 'village', 'status',
+        'latitude', 'longitude', 'village', 'district', 'sub_county', 'parish',
+        'status', 'firestore_doc_id', 'source_system',
     ];
 
     protected $casts = [
