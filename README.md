@@ -1,4 +1,11 @@
-# UWA-project
+# WildWatch Web Portal
+
+Laravel 13 + Sanctum API (`backend/`) and React + TanStack Start frontend (`frontend/`).
+
+**Architecture:** MySQL is authoritative for portal data (claims, payments, audit). Mobile-originated data lives in Firebase/Firestore. A bridge layer syncs between them via Cloud Functions webhooks and Laravel Firestore observers (`source_system` echo prevention). See [../REPOS.md](../REPOS.md) and [../IMPLEMENTATION-SESSION.md](../IMPLEMENTATION-SESSION.md).
+
+**Canonical paths:** edit `backend/` and `frontend/` only. Legacy duplicates exist at `backend/wildwatch-admin-api/` and `frontend/wildwatch-portal-update/` — do not extend them.
+
 ## Requirements
  
 - Node.js 18+ (20+ recommended)
@@ -29,10 +36,10 @@ cp .env.example .env
 It only needs one variable, pointing at the Laravel API (including the `/api` suffix):
  
 ```
-VITE_API_URL=http://localhost:8000/api
+VITE_API_URL=auto
 ```
- 
-If the backend is running elsewhere (different port, deployed URL, etc.), update this accordingly. This is read in `src/lib/api.ts`, which wraps all API calls and attaches the auth token as a Bearer header.
+
+Use `auto` to derive the API URL from the browser hostname (LAN-friendly). Or set an explicit URL, e.g. `VITE_API_URL=http://192.168.1.42:8000/api`.
  
 ## 3. Add the logo (optional)
  
