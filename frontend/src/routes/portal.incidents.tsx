@@ -6,6 +6,9 @@ import type { Paginated } from "@/lib/api-types";
 import { Download, MapPin, X, UserCheck, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 
+import { useAuth } from "@/lib/auth";
+import { usePark } from "@/lib/park-context";
+
 export const Route = createFileRoute("/portal/incidents")({ component: Incidents });
 
 interface IncidentRow {
@@ -40,10 +43,17 @@ function Incidents() {
   const [open, setOpen] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
   const queryClient = useQueryClient();
+  const { selectedParkId } = usePark();
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["incidents", statusFilter],
-    queryFn: () => apiFetch<Paginated<IncidentRow>>(`/incidents${statusFilter ? `?status=${encodeURIComponent(statusFilter)}` : ""}`),
+    queryKey: ["incidents", statusFilter, selectedParkId],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (statusFilter) params.set("status", statusFilter);
+      if (selectedParkId) params.set("park_id", selectedParkId);
+      const qs = params.toString();
+      return apiFetch<Paginated<IncidentRow>>(`/incidents?${qs}`);
+    },
   });
 
   const { data: rangers } = useQuery({
@@ -75,31 +85,53 @@ function Incidents() {
       {isLoading && <div className="portal-card p-6 text-sm text-[var(--p-ink-soft)]">Loading incidents…</div>}
       {isError && <div className="portal-card p-6 text-sm text-[var(--p-danger)]">Couldn't load incidents: {error instanceof Error ? error.message : "unknown error"}</div>}
 
-      {data && (
-        <div className="portal-card overflow-hidden">
-          <table className="portal-table">
-            <thead><tr><th>ID</th><th>Type</th><th>Park</th><th>Village</th><th>Reporter</th><th>Assigned to</th><th>Status</th><th>Reported</th></tr></thead>
-            <tbody>
-              {incidents.length === 0 && <tr><td colSpan={8} className="text-center text-[var(--p-ink-soft)] py-4">No incidents found.</td></tr>}
-              {incidents.map((i) => {
-                const assignedRanger = i.assignments?.[0]?.ranger;
-                return (
-                  <tr key={i.incident_id} onClick={() => setOpen(i.incident_id)} className="cursor-pointer">
-                    <td className="font-mono text-[12px] font-semibold text-[var(--p-olive-deep)]">WW-{i.incident_id}</td>
-                    <td>{i.incident_type}</td>
-                    <td>{i.park?.park_name ?? "—"}</td>
-                    <td>{i.village ?? "—"}</td>
-                    <td>{i.reporter ? `${i.reporter.first_name} ${i.reporter.last_name}` : "—"}</td>
-                    <td>{assignedRanger ? `${assignedRanger.first_name} ${assignedRanger.last_name}` : <span className="text-[var(--p-ink-soft)] italic">Unassigned</span>}</td>
-                    <td><StatusBadge status={i.status} /></td>
-                    <td className="text-[var(--p-ink-soft)] text-[12px]">{fmtDate(i.created_at)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <div className="portal-card overflow-hidden shadow-sm border-neutral-100 bg-white/50 backdrop-blur-sm">
+        <table className="portal-table border-collapse">
+          <thead>
+            <tr className="bg-neutral-50/50">
+              <th className="py-4 font-black">Callsign</th>
+              <th className="py-4 font-black">Type</th>
+              <th className="py-4 font-black">Region</th>
+              <th className="py-4 font-black">Village</th>
+              <th className="py-4 font-black">Reporter</th>
+              <th className="py-4 font-black">Operator</th>
+              <th className="py-4 font-black text-center">Status</th>
+              <th className="py-4 font-black text-right pr-6">Timestamp</th>
+            </tr>
+          </thead>
+          <tbody>
+            {incidents.length === 0 && (
+              <tr><td colSpan={8} className="text-center text-neutral-400 py-12 italic">No field data retrieved for the selected scope.</td></tr>
+            )}
+            {incidents.map((i) => {
+              const assignedRanger = i.assignments?.[0]?.ranger;
+              return (
+                <tr key={i.incident_id} onClick={() => setOpen(i.incident_id)} className="hover:bg-white transition-colors cursor-pointer group">
+                  <td className="font-mono text-[11px] font-bold text-neutral-400 py-4">WW-{i.incident_id}</td>
+                  <td className="font-bold text-neutral-800">{i.incident_type}</td>
+                  <td className="text-neutral-500 font-medium">{i.park?.park_name ?? "—"}</td>
+                  <td className="text-neutral-500">{i.village ?? "—"}</td>
+                  <td className="text-[13px] font-medium text-neutral-700">{i.reporter ? `${i.reporter.first_name} ${i.reporter.last_name}` : "—"}</td>
+                  <td>
+                    {assignedRanger ? (
+                      <div className="flex items-center gap-2">
+                        <div className="h-6 w-6 rounded-full bg-[#1A2F1A] text-white flex items-center justify-center text-[9px] font-bold">
+                          {assignedRanger.first_name[0]}{assignedRanger.last_name[0]}
+                        </div>
+                        <span className="text-[12px] font-semibold text-neutral-700">{assignedRanger.first_name}</span>
+                      </div>
+                    ) : (
+                      <span className="text-[11px] font-bold text-neutral-300 uppercase tracking-wider italic">Awaiting</span>
+                    )}
+                  </td>
+                  <td className="text-center"><StatusBadge status={i.status} /></td>
+                  <td className="text-right pr-6 font-bold text-neutral-400 tabular-nums text-[12px]">{fmtDate(i.created_at)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
 
       {selected && (
         <IncidentDrawer

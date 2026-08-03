@@ -56,9 +56,4 @@ class Incident extends Model
     {
         return $this->hasOne(RangerReport::class, 'incident_id', 'incident_id');
     }
-
-    public function compensationClaim()
-    {
-        return $this->hasOne(CompensationClaim::class, 'incident_id', 'incident_id');
-    }
 }

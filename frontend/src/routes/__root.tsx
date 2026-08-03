@@ -75,21 +75,18 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
+    title: "WildWatch Portal",
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Bwindi" },
-      { name: "description", content: "This is an application is for all national parks in Uganda." },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Bwindi" },
-      { property: "og:description", content: "This is an application is for all national parks in Uganda." },
+      { name: "description", content: "Administrative portal for wildlife protection and incident management." },
+      { name: "author", content: "WildWatch" },
+      { property: "og:title", content: "WildWatch Portal" },
+      { property: "og:description", content: "Administrative portal for wildlife protection and incident management." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Bwindi" },
-      { name: "twitter:description", content: "This is an application is for all national parks in Uganda." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/0d05c78c-18dd-40b8-aded-d64bae36dc61/id-preview-435d5b63--50bece5d-80da-47b2-a38a-04d46756e33f.lovable.app-1782455083085.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/0d05c78c-18dd-40b8-aded-d64bae36dc61/id-preview-435d5b63--50bece5d-80da-47b2-a38a-04d46756e33f.lovable.app-1782455083085.png" },
+      { name: "twitter:title", content: "WildWatch Portal" },
+      { name: "twitter:description", content: "Administrative portal for wildlife protection and incident management." },
     ],
     links: [
       {

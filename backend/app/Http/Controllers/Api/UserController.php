@@ -17,6 +17,9 @@ class UserController extends Controller
         if ($request->filled('role')) {
             $query->whereHas('roles', fn ($q) => $q->where('role_name', $request->role));
         }
+        if ($request->filled('park_id')) {
+            $query->where('park_id', $request->park_id);
+        }
 
         return response()->json(
             $query->latest('created_at')->paginate($request->integer('per_page', 25))

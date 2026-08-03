@@ -15,14 +15,10 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $roles = [
-            'Community Member' => 'Reports incidents and tracks claims',
+            'Public' => 'Community members and tourists',
             'Ranger' => 'Responds to incidents',
-            'Community Wildlife Officer' => 'Coordinates community wildlife activities',
-            'Compensation Officer' => 'Reviews compensation claims',
             'UWA Official' => 'Approves claims and monitors analytics',
-            'Park Warden' => 'Supervises park operations',
             'System Administrator' => 'Manages the system',
-            'Gamepark Officer' => 'Logs in via the Gamepark portal for a single park: handles assignments, emergency notifications, and evidence forms',
         ];
 
         foreach ($roles as $name => $description) {
@@ -57,30 +53,10 @@ class DatabaseSeeder extends Seeder
             Species::firstOrCreate(['common_name' => $s['common_name']], $s);
         }
 
-        $gameparkRole = Role::where('role_name', 'Gamepark Officer')->first();
         $rangerRole = Role::where('role_name', 'Ranger')->first();
 
         foreach (Park::all() as $index => $park) {
             $slug = str($park->park_name)->before(' National Park')->slug('')->lower();
-
-            $gamepark = User::firstOrCreate(
-                ['email' => "{$slug}.gamepark@uwa.go.ug"],
-                [
-                    'first_name' => str($park->park_name)->before(' National Park')->value(),
-                    'last_name' => 'Gamepark',
-                    'password_hash' => Hash::make('Gamepark#'.($index + 1).'2026'),
-                    'account_status' => 'Active',
-                    'email_verified' => true,
-                    'park_id' => $park->park_id,
-                ]
-            );
-
-            if (! $gamepark->park_id) {
-                $gamepark->update(['park_id' => $park->park_id]);
-            }
-            if (! $gamepark->roles->contains($gameparkRole->role_id)) {
-                $gamepark->roles()->attach($gameparkRole->role_id);
-            }
 
             for ($r = 1; $r <= 3; $r++) {
                 $ranger = User::firstOrCreate(
@@ -104,26 +80,26 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        $reporter = User::firstOrCreate(
-            ['email' => 'community.reporter@wildwatch.app'],
+        $official = User::firstOrCreate(
+            ['email' => 'official@wildwatch.app'],
             [
-                'first_name' => 'Grace',
-                'last_name' => 'Kyomuhendo',
+                'first_name' => 'Bob',
+                'last_name' => 'Official',
                 'password_hash' => Hash::make('password123'),
                 'account_status' => 'Active',
                 'email_verified' => true,
             ]
         );
 
-        $communityRole = Role::where('role_name', 'Community Member')->first();
-        if (! $reporter->roles->contains($communityRole->role_id)) {
-            $reporter->roles()->attach($communityRole->role_id);
+        $officialRole = Role::where('role_name', 'UWA Official')->first();
+        if (! $official->roles->contains($officialRole->role_id)) {
+            $official->roles()->attach($officialRole->role_id);
         }
 
-        $this->seedIncidents($reporter);
+        $this->seedIncidents($official);
 
         $admin = User::firstOrCreate(
-            ['email' => 'admin@uwa.go.ug'],
+            ['email' => 'admin@wildwatch.app'],
             [
                 'first_name' => 'System',
                 'last_name' => 'Administrator',
@@ -138,10 +114,9 @@ class DatabaseSeeder extends Seeder
             $admin->roles()->attach($adminRole->role_id);
         }
 
-        $this->call(BridgeFixturesSeeder::class);
     }
 
-    private function seedIncidents(User $reporter): void
+    private function seedIncidents(User $official): void
     {
         $incidentTypes = [
             'Crop Damage', 'Livestock Loss', 'Property Damage',
@@ -242,7 +217,7 @@ class DatabaseSeeder extends Seeder
                         'description' => $descriptions[$i % count($descriptions)]." ({$park->park_name})",
                     ],
                     [
-                        'reported_by' => $reporter->user_id,
+                        'reported_by' => $official->user_id,
                         'incident_type' => $incidentTypes[$i % count($incidentTypes)],
                         'latitude' => $baseLat + (($i * 0.01) - 0.02),
                         'longitude' => $baseLng + (($i * 0.01) - 0.02),

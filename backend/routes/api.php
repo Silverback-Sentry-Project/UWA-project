@@ -49,12 +49,6 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/sos-alerts/{sosAlert}', [SosAlertController::class, 'show']);
     Route::patch('/sos-alerts/{sosAlert}/status', [SosAlertController::class, 'updateStatus']);
 
-    Route::get('/claims', [ClaimController::class, 'index']);
-    Route::get('/claims/{claim}', [ClaimController::class, 'show']);
-    Route::post('/claims/{claim}/approve', [ClaimController::class, 'approve']);
-    Route::post('/claims/{claim}/reject', [ClaimController::class, 'reject']);
-    Route::post('/claims/{claim}/mark-paid', [ClaimController::class, 'markPaid']);
-
     Route::get('/users', [UserController::class, 'index']);
     Route::post('/users', [UserController::class, 'store']);
     Route::get('/users/{user}', [UserController::class, 'show']);

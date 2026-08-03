@@ -40,7 +40,7 @@ class IncidentController extends Controller
     {
         $incident->load([
             'park', 'reporter', 'species', 'media', 'assignments.ranger',
-            'statusHistory.updatedBy', 'rangerReport', 'compensationClaim',
+            'statusHistory.updatedBy', 'rangerReport',
         ]);
 
         return response()->json($incident);

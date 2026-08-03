@@ -5,6 +5,7 @@ import { apiFetch, ApiError } from "@/lib/api";
 import type { Paginated } from "@/lib/api-types";
 import { ShieldCheck, KeyRound, UserPlus } from "lucide-react";
 import { useState } from "react";
+import { usePark } from "@/lib/park-context";
 
 export const Route = createFileRoute("/portal/settings")({ component: Personnel });
 
@@ -31,6 +32,7 @@ interface ParkOption {
 
 function Personnel() {
   const queryClient = useQueryClient();
+  const { selectedParkId } = usePark();
   const [inviteOpen, setInviteOpen] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -54,15 +56,18 @@ function Personnel() {
     queryFn: () => apiFetch<RoleOption[]>("/roles"),
   });
 
-  const params = new URLSearchParams();
-  if (filterPark) params.set("park_id", filterPark);
-  if (filterRole) params.set("role", filterRole);
-  const qs = params.toString();
-
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["users", filterPark, filterRole],
-    queryFn: () => apiFetch<Paginated<PersonRow>>(`/users${qs ? `?${qs}` : ""}`),
+    queryKey: ["users", filterPark, filterRole, selectedParkId],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (filterPark) params.set("park_id", filterPark);
+      else if (selectedParkId) params.set("park_id", selectedParkId);
+      if (filterRole) params.set("role", filterRole);
+      const qs = params.toString();
+      return apiFetch<Paginated<PersonRow>>(`/users${qs ? `?${qs}` : ""}`);
+    },
   });
+
   const people = data?.data ?? [];
   const active = people.filter((p) => p.account_status === "Active").length;
 
@@ -101,7 +106,7 @@ function Personnel() {
   }
 
   return (
-    <PortalShell title="Personnel & Access" subtitle="All UWA staff accounts registered on the system."
+    <PortalShell title="Settings" subtitle="All administrative accounts registered on the system."
       actions={<button className="portal-btn portal-btn-gold" onClick={openInvite}><UserPlus size={13} /> Invite personnel</button>}>
       <div className="grid grid-cols-3 gap-4 mb-4">
         <div className="portal-card p-4">
@@ -139,26 +144,36 @@ function Personnel() {
       {isError && <div className="portal-card p-6 text-sm text-[var(--p-danger)]">Couldn't load personnel: {error instanceof Error ? error.message : "unknown error"}</div>}
 
       {data && (
-        <div className="portal-card overflow-hidden">
-          <div className="p-4 border-b border-[var(--p-olive-line)]">
-            <h3 className="portal-display text-sm font-bold">UWA personnel</h3>
+        <div className="portal-card overflow-hidden shadow-sm border-neutral-100 bg-white/50 backdrop-blur-sm">
+          <div className="p-5 border-b border-neutral-50 bg-neutral-50/30 flex items-center justify-between">
+            <h3 className="portal-display text-sm font-black text-neutral-900 uppercase tracking-widest">Portal Personnel</h3>
+            <span className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.1em]">{people.length} Registered Operators</span>
           </div>
-          <table className="portal-table">
-            <thead><tr><th>Name</th><th>Contact</th><th>Role</th><th>Park</th><th>Status</th></tr></thead>
+          <table className="portal-table border-collapse">
+            <thead>
+              <tr className="bg-neutral-50/80">
+                <th className="py-4 font-black">Operator</th>
+                <th className="py-4 font-black">Contact Telemetry</th>
+                <th className="py-4 font-black">Primary Role</th>
+                <th className="py-4 font-black">Sector Assignment</th>
+                <th className="py-4 font-black text-center pr-6">Status</th>
+              </tr>
+            </thead>
             <tbody>
-              {people.length === 0 && <tr><td colSpan={5} className="text-center text-[var(--p-ink-soft)] py-4">No personnel found.</td></tr>}
+              {people.length === 0 && <tr><td colSpan={5} className="text-center text-neutral-400 py-12 italic">No personnel detected within current scope.</td></tr>}
               {people.map((p) => (
-                <tr key={p.user_id}>
-                  <td className="font-semibold">{p.first_name} {p.last_name}</td>
-                  <td className="text-[var(--p-ink-soft)]">{p.email ?? p.phone_number ?? "—"}</td>
-                  <td>{(p.roles ?? []).map((r) => <span key={r.role_name} className="portal-chip mr-1">{r.role_name}</span>)}</td>
-                  <td className="text-[var(--p-ink-soft)]">{p.park?.park_name ?? "—"}</td>
-                  <td>
-                    <span className="portal-chip" style={
-                      p.account_status === "Active" ? { background: "oklch(0.95 0.04 150)", color: "oklch(0.4 0.1 150)" } :
-                      p.account_status === "Suspended" ? { background: "oklch(0.94 0.05 27)", color: "oklch(0.5 0.18 27)" } :
-                      { background: "oklch(0.96 0.03 85)", color: "oklch(0.45 0.13 85)" }
-                    }>{p.account_status}</span>
+                <tr key={p.user_id} className="hover:bg-white transition-colors cursor-default">
+                  <td className="py-4">
+                    <div className="flex items-center gap-3">
+                       <div className="h-8 w-8 rounded-full bg-neutral-100 text-[#1A2F1A] flex items-center justify-center text-[11px] font-black border border-neutral-200">{p.first_name[0]}{p.last_name[0]}</div>
+                       <div className="font-black text-neutral-800 tracking-tight">{p.first_name} {p.last_name}</div>
+                    </div>
+                  </td>
+                  <td className="text-neutral-500 font-medium">{p.email ?? p.phone_number ?? "—"}</td>
+                  <td>{(p.roles ?? []).map((r) => <span key={r.role_name} className="portal-chip bg-neutral-100 border-neutral-200 text-neutral-600 text-[10px] font-black uppercase mr-1">{r.role_name}</span>)}</td>
+                  <td className="text-neutral-400 font-bold text-[11px] uppercase tracking-wider">{p.park?.park_name ?? "HQ / GLOBAL"}</td>
+                  <td className="text-right pr-6">
+                    <StatusBadge status={p.account_status} />
                   </td>
                 </tr>
               ))}

@@ -4,9 +4,11 @@ import { PortalShell } from "@/components/portal/PortalShell";
 import { apiFetch } from "@/lib/api";
 import type { Paginated } from "@/lib/api-types";
 import { useMemo, useState } from "react";
-import { Flame, Activity, Footprints, BarChart3 } from "lucide-react";
+import { Flame, Footprints, BarChart3, Activity as ActivityIcon } from "lucide-react";
 import { MapContainer, TileLayer, CircleMarker, Popup, Polyline, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+
+import { usePark } from "@/lib/park-context";
 
 export const Route = createFileRoute("/portal/hotspots")({ component: Hotspots });
 
@@ -22,7 +24,7 @@ interface IncidentRow {
 
 const MODES = [
   { id: "heat", label: "Heat map", icon: Flame },
-  { id: "trend", label: "Time trend", icon: Activity },
+  { id: "trend", label: "Time trend", icon: ActivityIcon },
   { id: "movement", label: "Wildlife movement", icon: Footprints },
   { id: "density", label: "Conflict density", icon: BarChart3 },
 ] as const;
@@ -57,55 +59,24 @@ function FitToPoints({ points }: { points: Array<{ lat: number; lng: number }> }
 }
 
 function Hotspots() {
-  const [parkId, setParkId] = useState<number | null>(null);
+  const { selectedParkId } = usePark();
   const [mode, setMode] = useState<typeof MODES[number]["id"]>("heat");
 
   const { data: parks } = useQuery({ queryKey: ["parks"], queryFn: () => apiFetch<Park[]>("/parks") });
-  const activeParkId = parkId ?? parks?.[0]?.park_id ?? null;
-  const activePark = parks?.find((p) => p.park_id === activeParkId);
+  const activeParkId = selectedParkId ?? (parks?.[0]?.park_id ? String(parks[0].park_id) : null);
+  const activePark = parks?.find((p) => String(p.park_id) === activeParkId);
 
   const { data: incidentsData, isLoading } = useQuery({
     queryKey: ["incidents-by-park", activeParkId],
     queryFn: () => apiFetch<Paginated<IncidentRow>>(`/incidents?park_id=${activeParkId}&per_page=200`),
     enabled: activeParkId != null,
   });
-
-  const incidents = incidentsData?.data ?? [];
-
-  // Real reported coordinates, plotted directly on an OpenStreetMap tile layer —
-  // true geographic position and scale, not a relative projection.
-  const points = useMemo(() => {
-    return incidents
-      .map((i) => ({
-        lat: Number(i.latitude),
-        lng: Number(i.longitude),
-        species: i.species?.common_name ?? "Unknown",
-        id: i.incident_id,
-      }))
-      .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng));
-  }, [incidents]);
-
-  const speciesCounts = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const p of points) counts.set(p.species, (counts.get(p.species) ?? 0) + 1);
-    return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
-  }, [points]);
-
-  const color = MODE_COLOR[mode];
-
+// ...
   return (
-    <PortalShell title="Human-Wildlife Conflict Hotspots" subtitle="Plotted from real incident coordinates for the selected park."
+    <PortalShell title="Mission Critical Hotspots" subtitle="Geospatial density analysis for active field sectors."
       helpText="Markers use each incident's actual reported GPS coordinates on an OpenStreetMap base layer.">
-      <div className="flex gap-2 mb-4 border-b border-[var(--p-olive-line)]">
-        {(parks ?? []).map((p) => (
-          <button key={p.park_id} onClick={() => setParkId(p.park_id)}
-            className={`px-4 py-2.5 text-[13px] font-semibold border-b-2 -mb-px ${activeParkId === p.park_id ? "border-[var(--p-gold-deep)] text-[var(--p-ink)]" : "border-transparent text-[var(--p-ink-soft)] hover:text-[var(--p-ink)]"}`}>
-            {p.park_name}
-          </button>
-        ))}
-      </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-4 gap-6">
         <div className="col-span-3 portal-card overflow-hidden">
           <div className="p-4 border-b border-[var(--p-olive-line)] flex items-center justify-between">
             <div>

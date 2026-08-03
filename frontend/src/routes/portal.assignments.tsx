@@ -6,6 +6,7 @@ import type { Paginated } from "@/lib/api-types";
 import { UserCheck } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
+import { usePark } from "@/lib/park-context";
 
 export const Route = createFileRoute("/portal/assignments")({ component: Assignments });
 
@@ -37,21 +38,31 @@ function Assignments() {
   const [rangerChoice, setRangerChoice] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const { user } = useAuth();
+  const { selectedParkId } = usePark();
 
-  // Assignments is a Gamepark-portal-only feature. Viewing incidents/rangers
-  // uses the shared endpoints (auto-scoped to this park by the backend);
-  // only the assign action itself is gamepark-exclusive.
   const { data: incidentsData, isLoading: loadingIncidents } = useQuery({
-    queryKey: ["incidents", "New"],
-    queryFn: () => apiFetch<Paginated<IncidentRow>>("/incidents?status=New"),
+    queryKey: ["incidents", "New", selectedParkId],
+    queryFn: () => {
+        const params = new URLSearchParams({ status: "New" });
+        if (selectedParkId) params.set("park_id", selectedParkId);
+        return apiFetch<Paginated<IncidentRow>>(`/incidents?${params.toString()}`);
+    },
   });
   const { data: inProgressData } = useQuery({
-    queryKey: ["incidents", "Assigned"],
-    queryFn: () => apiFetch<Paginated<IncidentRow>>("/incidents?status=Assigned"),
+    queryKey: ["incidents", "Assigned", selectedParkId],
+    queryFn: () => {
+        const params = new URLSearchParams({ status: "Assigned" });
+        if (selectedParkId) params.set("park_id", selectedParkId);
+        return apiFetch<Paginated<IncidentRow>>(`/incidents?${params.toString()}`);
+    },
   });
   const { data: rangers, isLoading: loadingRangers } = useQuery({
-    queryKey: ["rangers"],
-    queryFn: () => apiFetch<Ranger[]>("/rangers"),
+    queryKey: ["rangers", selectedParkId],
+    queryFn: () => {
+        const params = new URLSearchParams();
+        if (selectedParkId) params.set("park_id", selectedParkId);
+        return apiFetch<Ranger[]>(`/rangers?${params.toString()}`);
+    },
   });
 
   const unassigned = incidentsData?.data ?? [];
@@ -72,87 +83,109 @@ function Assignments() {
   }
 
   return (
-    <PortalShell title="Ranger & Game Warden Assignments" subtitle={`Dispatch personnel to new incidents${user?.park ? ` at ${user.park.park_name}` : ""}.`}
-      helpText="Pick a case from Unassigned, choose a ranger, then confirm. The incident moves to In progress immediately.">
-      <div className="grid grid-cols-12 gap-4">
-        <div className="col-span-4 portal-card">
-          <div className="p-4 border-b border-[var(--p-olive-line)] flex items-center justify-between">
-            <h3 className="portal-display text-sm font-bold">Unassigned <span className="text-[var(--p-ink-soft)] font-normal">({unassigned.length})</span></h3>
-            <span className="portal-chip" style={{ background: "oklch(0.94 0.05 27)", color: "oklch(0.5 0.18 27)" }}>Needs dispatch</span>
+    <PortalShell title="Command & Dispatch" subtitle={`Strategic personnel allocation for field response teams.`}
+      helpText="Select an unassigned case from the primary queue, select a field operator from the live roster, and initiate deployment. Cases transition to In Progress immediately upon assignment.">
+      <div className="grid grid-cols-12 gap-8">
+        <div className="col-span-4 space-y-4">
+          <div className="flex items-center justify-between px-2">
+            <h3 className="portal-display text-sm font-black text-neutral-900 uppercase tracking-widest">Active Queue</h3>
+            <span className="text-[10px] font-black bg-red-500 text-white px-2 py-0.5 rounded-full">{unassigned.length}</span>
           </div>
-          <div className="p-3 space-y-2 max-h-[600px] overflow-auto">
-            {loadingIncidents && <div className="text-[12px] text-[var(--p-ink-soft)] p-2">Loading…</div>}
-            {!loadingIncidents && unassigned.length === 0 && <div className="text-[12px] text-[var(--p-ink-soft)] p-2">Nothing waiting on dispatch.</div>}
-            {unassigned.map((i) => (
-              <div key={i.incident_id} className="border border-[var(--p-olive-line)] rounded-md p-3">
-                <div className="flex items-center justify-between">
-                  <div className="font-mono text-[11px] font-bold text-[var(--p-olive-deep)]">WW-{i.incident_id}</div>
-                  <StatusBadge status={i.status} />
-                </div>
-                <div className="text-[12px] font-semibold mt-1">{i.incident_type} · {i.park?.park_name ?? "—"}</div>
-                <div className="text-[11px] text-[var(--p-ink-soft)] line-clamp-1">{i.description}</div>
-                <div className="mt-2 text-[10px] text-[var(--p-ink-soft)]">{fmtDate(i.created_at)}</div>
-                {assigning === i.incident_id ? (
-                  <div className="mt-2 flex gap-1.5">
-                    <select className="portal-input flex-1 text-[11px]" value={rangerChoice} onChange={(e) => setRangerChoice(e.target.value)}>
-                      <option value="">Choose ranger…</option>
-                      {(rangers ?? []).map((r) => <option key={r.user_id} value={r.user_id}>{r.first_name} {r.last_name}</option>)}
-                    </select>
-                    <button className="portal-btn text-[11px] px-2" disabled={!rangerChoice} onClick={() => assign(i.incident_id)}>Go</button>
+          <div className="portal-card bg-white shadow-sm border-neutral-100 h-[700px] flex flex-col">
+            <div className="p-4 border-b border-neutral-50 bg-neutral-50/30">
+               <p className="text-[11px] text-neutral-400 font-bold uppercase tracking-widest">Awaiting Dispatch</p>
+            </div>
+            <div className="flex-1 overflow-auto p-3 space-y-3 custom-scrollbar">
+              {loadingIncidents && <div className="text-[12px] text-neutral-400 p-2 italic animate-pulse">Scanning field frequencies…</div>}
+              {!loadingIncidents && unassigned.length === 0 && <div className="text-[12px] text-neutral-300 p-2 text-center py-12 italic">Queue clear. All sectors quiet.</div>}
+              {unassigned.map((i) => (
+                <div key={i.incident_id} className={`p-4 rounded-2xl border transition-all duration-300 ${assigning === i.incident_id ? "border-[#1A2F1A] bg-emerald-50/20 shadow-md" : "border-neutral-100 bg-white hover:border-neutral-200 shadow-sm"}`}>
+                  <div className="flex items-center justify-between">
+                    <div className="font-mono text-[10px] font-black text-neutral-300">WW-{i.incident_id}</div>
+                    <StatusBadge status={i.status} />
                   </div>
-                ) : (
-                  <button className="portal-btn portal-btn-ghost text-[11px] w-full justify-center mt-2" onClick={() => setAssigning(i.incident_id)}><UserCheck size={12} /> Assign</button>
-                )}
-              </div>
-            ))}
+                  <div className="text-[13px] font-black text-neutral-800 mt-2">{i.incident_type}</div>
+                  <div className="text-[11px] text-neutral-500 line-clamp-2 mt-1 leading-snug font-medium">{i.description}</div>
+                  <div className="mt-3 flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">{fmtDate(i.created_at)}</span>
+                  </div>
+                  {assigning === i.incident_id ? (
+                    <div className="mt-4 pt-4 border-t border-neutral-100 space-y-2">
+                      <select className="portal-input w-full text-[12px] font-bold bg-white" value={rangerChoice} onChange={(e) => setRangerChoice(e.target.value)}>
+                        <option value="">Select Operator…</option>
+                        {(rangers ?? []).map((r) => <option key={r.user_id} value={r.user_id}>{r.first_name} {r.last_name}</option>)}
+                      </select>
+                      <div className="flex gap-2">
+                        <button className="portal-btn flex-1 text-[11px] h-9 shadow-sm" disabled={!rangerChoice} onClick={() => assign(i.incident_id)}>Deploy</button>
+                        <button className="portal-btn portal-btn-ghost flex-1 text-[11px] h-9" onClick={() => setAssigning(null)}>Abort</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button className="portal-btn portal-btn-ghost text-[11px] w-full justify-center mt-4 h-9 font-bold border-neutral-200" onClick={() => setAssigning(i.incident_id)}><UserCheck size={14} /> Assign Operator</button>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
-        <div className="col-span-4 portal-card">
-          <div className="p-4 border-b border-[var(--p-olive-line)]">
-            <h3 className="portal-display text-sm font-bold">Personnel roster</h3>
-            <p className="text-[11px] text-[var(--p-ink-soft)]">Active assignment load per ranger</p>
-          </div>
-          <div className="p-3 space-y-2 max-h-[600px] overflow-auto">
-            {loadingRangers && <div className="text-[12px] text-[var(--p-ink-soft)] p-2">Loading…</div>}
-            {(rangers ?? []).map((r) => (
-              <div key={r.user_id} className="border border-[var(--p-olive-line)] rounded-md p-3 flex items-center gap-3">
-                <div className="h-9 w-9 rounded-full bg-[var(--p-olive)] text-white grid place-items-center text-[11px] font-bold">{`${r.first_name[0] ?? ""}${r.last_name[0] ?? ""}`}</div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[13px] font-semibold leading-tight">{r.first_name} {r.last_name}</div>
-                  <div className="mt-1 flex items-center gap-2"><StatusBadge status={r.account_status} /><span className="text-[10px] text-[var(--p-ink-soft)]">{r.active_assignments_count} active</span></div>
+        <div className="col-span-4 space-y-4">
+          <h3 className="portal-display text-sm font-black text-neutral-900 px-2 uppercase tracking-widest">Active Roster</h3>
+          <div className="portal-card bg-white shadow-sm border-neutral-100 h-[700px] overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-neutral-50 bg-neutral-50/30">
+               <p className="text-[11px] text-neutral-400 font-bold uppercase tracking-widest">Live Operator Load</p>
+            </div>
+            <div className="flex-1 overflow-auto p-3 space-y-2 custom-scrollbar">
+              {loadingRangers && <div className="text-[12px] text-neutral-400 p-2 italic animate-pulse">Authenticating personnel IDs…</div>}
+              {(rangers ?? []).map((r) => (
+                <div key={r.user_id} className="p-4 rounded-2xl border border-neutral-50 bg-white flex items-center gap-4 hover:border-neutral-200 transition-colors">
+                  <div className="h-11 w-11 rounded-xl bg-neutral-100 text-[#1A2F1A] flex items-center justify-center text-[13px] font-black border border-neutral-200 shadow-sm">{`${r.first_name[0] ?? ""}${r.last_name[0] ?? ""}`}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[13px] font-black text-neutral-800 leading-tight tracking-tight">{r.first_name} {r.last_name}</div>
+                    <div className="mt-1 flex items-center gap-2">
+                       <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                       <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">{r.active_assignments_count} Operations</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
-            {!loadingRangers && (rangers ?? []).length === 0 && <div className="text-[12px] text-[var(--p-ink-soft)] p-2">No personnel with the Ranger role yet.</div>}
+              ))}
+              {!loadingRangers && (rangers ?? []).length === 0 && <div className="text-[12px] text-neutral-300 p-6 text-center italic">Sector roster empty.</div>}
+            </div>
           </div>
         </div>
 
-        <div className="col-span-4 portal-card">
-          <div className="p-4 border-b border-[var(--p-olive-line)]">
-            <h3 className="portal-display text-sm font-bold">In progress <span className="text-[var(--p-ink-soft)] font-normal">({inProgress.length})</span></h3>
-            <p className="text-[11px] text-[var(--p-ink-soft)]">Assigned, awaiting resolution</p>
-          </div>
-          <div className="p-3 space-y-2 max-h-[600px] overflow-auto">
-            {inProgress.map((i) => (
-              <div key={i.incident_id} className="border border-[var(--p-olive-line)] rounded-md p-3">
-                <div className="flex items-center justify-between text-[11px]">
-                  <div className="font-mono font-bold text-[var(--p-olive-deep)]">WW-{i.incident_id}</div>
-                  <StatusBadge status={i.status} />
+        <div className="col-span-4 space-y-4">
+          <h3 className="portal-display text-sm font-black text-neutral-900 px-2 uppercase tracking-widest">Mission Track</h3>
+          <div className="portal-card bg-white shadow-sm border-neutral-100 h-[700px] overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-neutral-50 bg-neutral-50/30">
+               <p className="text-[11px] text-neutral-400 font-bold uppercase tracking-widest">In Progress</p>
+            </div>
+            <div className="flex-1 overflow-auto p-3 space-y-3 custom-scrollbar">
+              {inProgress.map((i) => (
+                <div key={i.incident_id} className="p-4 rounded-2xl border border-neutral-100 bg-[#1A2F1A]/[0.02] shadow-sm">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <div className="font-mono font-black text-neutral-300 uppercase">OPER WW-{i.incident_id}</div>
+                    <StatusBadge status={i.status} />
+                  </div>
+                  <div className="text-[13px] font-black text-neutral-800 mt-2">{i.incident_type}</div>
+                  <div className="mt-4 flex items-center gap-3 p-3 bg-white rounded-xl border border-neutral-100 shadow-sm">
+                    <div className="h-7 w-7 rounded-lg bg-[#1A2F1A] text-white flex items-center justify-center text-[10px] font-black shadow-lg">
+                       {i.assignments?.[0]?.ranger?.first_name[0]}{i.assignments?.[0]?.ranger?.last_name[0]}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                       <div className="text-[11px] font-black text-neutral-800 truncate uppercase tracking-tight">{i.assignments?.[0]?.ranger ? `${i.assignments[0].ranger!.first_name} ${i.assignments[0].ranger!.last_name}` : "Unassigned"}</div>
+                       <div className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest mt-0.5">Assigned Lead</div>
+                    </div>
+                  </div>
+                  <div className="mt-3 text-[10px] font-bold text-neutral-300 uppercase tracking-widest">Logged {fmtDate(i.created_at)}</div>
                 </div>
-                <div className="text-[12px] font-semibold mt-1">{i.incident_type} · {i.park?.park_name ?? "—"}</div>
-                <div className="mt-2 flex items-center gap-1.5 text-[11px]">
-                  <UserCheck size={12} className="text-[var(--p-olive)]" />
-                  <span className="font-semibold">{i.assignments?.[0]?.ranger ? `${i.assignments[0].ranger!.first_name} ${i.assignments[0].ranger!.last_name}` : "Unassigned"}</span>
-                </div>
-                <div className="mt-1 text-[10px] text-[var(--p-ink-soft)]">Reported {fmtDate(i.created_at)}</div>
-              </div>
-            ))}
-            {inProgress.length === 0 && <div className="text-[12px] text-[var(--p-ink-soft)] p-2">Nothing in progress right now.</div>}
+              ))}
+              {inProgress.length === 0 && <div className="text-[12px] text-neutral-300 p-6 text-center italic">No active missions in field.</div>}
+            </div>
           </div>
         </div>
       </div>
-      {err && <div className="mt-3 text-[12px] text-[var(--p-danger)] bg-[var(--p-danger)]/10 border border-[var(--p-danger)]/30 rounded-md px-3 py-2">{err}</div>}
+      {err && <div className="mt-6 text-[12px] font-black text-red-600 bg-red-50 border border-red-100 rounded-2xl px-4 py-3 animate-in shake-in duration-300">{err}</div>}
     </PortalShell>
   );
 }

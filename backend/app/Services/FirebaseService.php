@@ -15,23 +15,25 @@ class FirebaseService
     {
         $factory = new Factory();
 
-        // If we have a service account file, use it.
-        // Otherwise, the SDK will look for GOOGLE_APPLICATION_CREDENTIALS
-        // or fail gracefully if we're only using emulators.
-        $serviceAccount = storage_path('app/firebase-auth.json');
-        if (file_exists($serviceAccount)) {
-            $factory = $factory->withServiceAccount($serviceAccount);
-        }
-
-        // Discovery for emulators via environment variables is handled
-        // automatically by the SDK if they are set (which we did in .env.laravel.local).
-        // However, we can be explicit for safety in local dev.
         if (config('app.env') === 'local') {
-            if ($authHost = env('FIREBASE_AUTH_EMULATOR_HOST')) {
-                $factory = $factory->withAuthEmulator('http://' . $authHost);
-            }
-            if ($firestoreHost = env('FIRESTORE_EMULATOR_HOST')) {
-                $factory = $factory->withFirestoreEmulator(...explode(':', $firestoreHost));
+            // Use a dummy service account to satisfy the SDK's internal checks
+            // while it actually connects to the emulators.
+            $factory = $factory->withServiceAccount([
+                'type' => 'service_account',
+                'project_id' => env('GCLOUD_PROJECT', 'demo-wildwatch-local'),
+                'private_key_id' => 'dummy',
+                'private_key' => "-----BEGIN PRIVATE KEY-----\nMIICdgIBADANBgkqhkiG9w0BAQEFAASCAmAwggJcAgEAAoGBAM7P\n-----END PRIVATE KEY-----\n",
+                'client_email' => 'dummy@example.com',
+                'client_id' => '123',
+                'auth_uri' => 'https://accounts.google.com/o/oauth2/auth',
+                'token_uri' => 'https://oauth2.googleapis.com/token',
+                'auth_provider_x509_cert_url' => 'https://www.googleapis.com/oauth2/v1/certs',
+                'client_x509_cert_url' => 'https://www.googleapis.com/robot/v1/metadata/x509/dummy%40example.com'
+            ]);
+        } else {
+            $serviceAccount = storage_path('app/firebase-auth.json');
+            if (file_exists($serviceAccount)) {
+                $factory = $factory->withServiceAccount($serviceAccount);
             }
         }
 

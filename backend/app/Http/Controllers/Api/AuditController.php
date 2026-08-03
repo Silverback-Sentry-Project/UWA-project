@@ -12,6 +12,10 @@ class AuditController extends Controller
     {
         $query = IncidentStatusHistory::with(['incident', 'updatedBy']);
 
+        if ($request->user()?->isGamepark()) {
+            $query->whereHas('incident', fn ($q) => $q->where('park_id', $request->user()->park_id));
+        }
+
         return response()->json(
             $query->latest('updated_at')->paginate($request->integer('per_page', 50))
         );

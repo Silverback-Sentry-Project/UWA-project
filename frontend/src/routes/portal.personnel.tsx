@@ -4,6 +4,7 @@ import { PortalShell } from "@/components/portal/PortalShell";
 import { apiFetch, ApiError } from "@/lib/api";
 import { UserPlus, ShieldCheck } from "lucide-react";
 import { useState } from "react";
+import { usePark } from "@/lib/park-context";
 
 export const Route = createFileRoute("/portal/personnel")({ component: GameparkPersonnel });
 
@@ -26,19 +27,19 @@ const INVITABLE_ROLES = [
 
 function GameparkPersonnel() {
   const queryClient = useQueryClient();
+  const { selectedParkId } = usePark();
   const [inviteOpen, setInviteOpen] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [roleName, setRoleName] = useState("");
-  const [roleIdByName, setRoleIdByName] = useState<Record<string, number>>({});
   const [sending, setSending] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const { data: people, isLoading } = useQuery({
-    queryKey: ["gamepark-personnel"],
-    queryFn: () => apiFetch<PersonRow[]>("/gamepark/personnel"),
+    queryKey: ["gamepark-personnel", selectedParkId],
+    queryFn: () => apiFetch<PersonRow[]>(`/gamepark/personnel${selectedParkId ? `?park_id=${selectedParkId}` : ""}`),
   });
 
   // Roles are a shared lookup; filter down to what this portal may invite.
@@ -80,7 +81,7 @@ function GameparkPersonnel() {
   }
 
   return (
-    <PortalShell title="Personnel" subtitle="Field staff working at this park."
+    <PortalShell title="Settings" subtitle="Field staff and access management for this park."
       actions={<button className="portal-btn portal-btn-gold" onClick={openInvite}><UserPlus size={13} /> Invite personnel</button>}>
       {isLoading && <div className="portal-card p-6 text-sm text-[var(--p-ink-soft)]">Loading…</div>}
       {!isLoading && (

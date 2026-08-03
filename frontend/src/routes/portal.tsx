@@ -1,17 +1,20 @@
 import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { AuthProvider, useAuth } from "@/lib/auth";
+import { ParkProvider } from "@/lib/park-context";
 
 export const Route = createFileRoute("/portal")({
   head: () => ({
+    title: "WildWatch Portal",
     meta: [
-      { title: "UWA Web Portal — Wildwatch" },
-      { name: "description", content: "Secure UWA administrative portal for incident monitoring, hotspot analytics, and compensation management." },
+      { name: "description", content: "Administrative portal for wildlife protection and data management." },
     ],
   }),
   component: () => (
     <AuthProvider>
-      <PortalGuard />
+      <ParkProvider>
+        <PortalGuard />
+      </ParkProvider>
     </AuthProvider>
   ),
 });
@@ -37,7 +40,7 @@ function PortalGuard() {
   }
 
   // While a redirect is pending (wrong page for auth state), render nothing to avoid a flash.
-  if ((!user && !isLoginPage) || (user && isLoginPage)) return null;
+  // if ((!user && !isLoginPage) || (user && isLoginPage)) return null;
 
   return <Outlet />;
 }

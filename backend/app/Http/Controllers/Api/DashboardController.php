@@ -3,42 +3,41 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\CompensationClaim;
 use App\Models\Incident;
 use App\Models\Park;
 use App\Models\SosAlert;
 use App\Models\User;
+use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function stats()
+    public function stats(Request $request)
     {
+        $parkId = $request->query('park_id');
+        $gameparkParkId = $request->user()?->isGamepark() ? $request->user()->park_id : $parkId;
+
+        $incidentBase = fn () => $gameparkParkId ? Incident::where('park_id', $gameparkParkId) : Incident::query();
+        $sosBase = fn () => $gameparkParkId ? SosAlert::where('park_id', $gameparkParkId) : SosAlert::query();
+        $rangerBase = fn () => User::whereHas('roles', fn ($q) => $q->where('role_name', 'Ranger'))
+            ->when($gameparkParkId, fn ($q) => $q->where('park_id', $gameparkParkId));
+
         return response()->json([
-            'parks_count' => Park::count(),
-            'rangers_count' => User::whereHas('roles', fn ($q) => $q->where('role_name', 'Ranger'))->count(),
+            'parks_count' => $gameparkParkId ? 1 : Park::count(),
+            'rangers_count' => $rangerBase()->count(),
             'incidents' => [
-                'total' => Incident::count(),
-                'new' => Incident::where('status', 'New')->count(),
-                'assigned' => Incident::where('status', 'Assigned')->count(),
-                'in_progress' => Incident::where('status', 'In Progress')->count(),
-                'resolved' => Incident::where('status', 'Resolved')->count(),
-                'escalated' => Incident::where('status', 'Escalated')->count(),
+                'total' => $incidentBase()->count(),
+                'new' => $incidentBase()->where('status', 'New')->count(),
+                'assigned' => $incidentBase()->where('status', 'Assigned')->count(),
+                'in_progress' => $incidentBase()->where('status', 'In Progress')->count(),
+                'resolved' => $incidentBase()->where('status', 'Resolved')->count(),
+                'escalated' => $incidentBase()->where('status', 'Escalated')->count(),
             ],
             'sos_alerts' => [
-                'total' => SosAlert::count(),
-                'pending' => SosAlert::where('status', 'Pending')->count(),
-                'responding' => SosAlert::where('status', 'Responding')->count(),
+                'total' => $sosBase()->count(),
+                'pending' => $sosBase()->where('status', 'Pending')->count(),
+                'responding' => $sosBase()->where('status', 'Responding')->count(),
             ],
-            'claims' => [
-                'total' => CompensationClaim::count(),
-                'submitted' => CompensationClaim::where('claim_status', 'Submitted')->count(),
-                'under_review' => CompensationClaim::where('claim_status', 'Under Review')->count(),
-                'approved' => CompensationClaim::where('claim_status', 'Approved')->count(),
-                'rejected' => CompensationClaim::where('claim_status', 'Rejected')->count(),
-                'paid' => CompensationClaim::where('claim_status', 'Paid')->count(),
-                'total_amount_estimated' => CompensationClaim::sum('estimated_amount'),
-            ],
-            'recent_incidents' => Incident::with(['park', 'reporter'])
+            'recent_incidents' => $incidentBase()->with(['park', 'reporter'])
                 ->latest('created_at')->limit(5)->get(),
         ]);
     }
