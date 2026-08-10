@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\Api\AuditController;
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\ClaimController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\IncidentController;
 use App\Http\Controllers\Api\NewsArticleController;

@@ -1,7 +1,8 @@
 <?php
 
 use App\Http\Middleware\EnsureAdmin;
-use App\Http\Middleware\EnsureGamepark;
+use App\Http\Middleware\EnsureWardenOrUwaOfficial;
+use App\Http\Middleware\VerifyWebhookSignature;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -16,9 +17,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'admin' => EnsureAdmin::class,
-            'gamepark' => EnsureGamepark::class,
-            'webhook.signature' => \App\Http\Middleware\VerifyWebhookSignature::class,
-            'warden_or_uwa' => \App\Http\Middleware\EnsureWardenOrUwaOfficial::class,
+            'webhook.signature' => VerifyWebhookSignature::class,
+            'warden_or_uwa' => EnsureWardenOrUwaOfficial::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

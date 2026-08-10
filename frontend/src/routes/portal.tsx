@@ -7,7 +7,10 @@ export const Route = createFileRoute("/portal")({
   head: () => ({
     title: "WildWatch Portal",
     meta: [
-      { name: "description", content: "Administrative portal for wildlife protection and data management." },
+      {
+        name: "description",
+        content: "Administrative portal for wildlife protection and data management.",
+      },
     ],
   }),
   component: () => (

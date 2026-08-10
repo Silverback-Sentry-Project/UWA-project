@@ -79,14 +79,23 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { name: "description", content: "Administrative portal for wildlife protection and incident management." },
+      {
+        name: "description",
+        content: "Administrative portal for wildlife protection and incident management.",
+      },
       { name: "author", content: "WildWatch" },
       { property: "og:title", content: "WildWatch Portal" },
-      { property: "og:description", content: "Administrative portal for wildlife protection and incident management." },
+      {
+        property: "og:description",
+        content: "Administrative portal for wildlife protection and incident management.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:title", content: "WildWatch Portal" },
-      { name: "twitter:description", content: "Administrative portal for wildlife protection and incident management." },
+      {
+        name: "twitter:description",
+        content: "Administrative portal for wildlife protection and incident management.",
+      },
     ],
     links: [
       {

@@ -10,25 +10,119 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as CommunityRouteImport } from './routes/community'
+import { Route as GpsRouteImport } from './routes/gps'
 import { Route as PortalRouteImport } from './routes/portal'
+import { Route as RangerRouteImport } from './routes/ranger'
+import { Route as CommunityIndexRouteImport } from './routes/community.index'
+import { Route as CommunityAlertsRouteImport } from './routes/community.alerts'
+import { Route as CommunityClaimRouteImport } from './routes/community.claim'
+import { Route as CommunityClaimPromptRouteImport } from './routes/community.claim-prompt'
+import { Route as CommunityConflictRouteImport } from './routes/community.conflict'
+import { Route as CommunityFeedRouteImport } from './routes/community.feed'
+import { Route as CommunityNotificationsRouteImport } from './routes/community.notifications'
+import { Route as CommunityProfileRouteImport } from './routes/community.profile'
+import { Route as CommunitySightingRouteImport } from './routes/community.sighting'
+import { Route as CommunitySosRouteImport } from './routes/community.sos'
 import { Route as PortalIndexRouteImport } from './routes/portal.index'
 import { Route as PortalAssignmentsRouteImport } from './routes/portal.assignments'
+import { Route as PortalAuditRouteImport } from './routes/portal.audit'
+import { Route as PortalClaimsRouteImport } from './routes/portal.claims'
 import { Route as PortalConflictsRouteImport } from './routes/portal.conflicts'
 import { Route as PortalDashboardRouteImport } from './routes/portal.dashboard'
+import { Route as PortalFormsRouteImport } from './routes/portal.forms'
 import { Route as PortalHotspotsRouteImport } from './routes/portal.hotspots'
 import { Route as PortalIncidentsRouteImport } from './routes/portal.incidents'
 import { Route as PortalPersonnelRouteImport } from './routes/portal.personnel'
 import { Route as PortalSettingsRouteImport } from './routes/portal.settings'
+import { Route as PortalSubmissionsRouteImport } from './routes/portal.submissions'
+import { Route as PortalVerifiedFormsRouteImport } from './routes/portal.verified-forms'
+import { Route as RangerIndexRouteImport } from './routes/ranger.index'
+import { Route as RangerIncidentRouteImport } from './routes/ranger.incident'
+import { Route as RangerMapRouteImport } from './routes/ranger.map'
+import { Route as RangerProfileRouteImport } from './routes/ranger.profile'
+import { Route as RangerTrackingRouteImport } from './routes/ranger.tracking'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CommunityRoute = CommunityRouteImport.update({
+  id: '/community',
+  path: '/community',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GpsRoute = GpsRouteImport.update({
+  id: '/gps',
+  path: '/gps',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PortalRoute = PortalRouteImport.update({
   id: '/portal',
   path: '/portal',
   getParentRoute: () => rootRouteImport,
+} as any)
+const RangerRoute = RangerRouteImport.update({
+  id: '/ranger',
+  path: '/ranger',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CommunityIndexRoute = CommunityIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CommunityRoute,
+} as any)
+const CommunityAlertsRoute = CommunityAlertsRouteImport.update({
+  id: '/alerts',
+  path: '/alerts',
+  getParentRoute: () => CommunityRoute,
+} as any)
+const CommunityClaimRoute = CommunityClaimRouteImport.update({
+  id: '/claim',
+  path: '/claim',
+  getParentRoute: () => CommunityRoute,
+} as any)
+const CommunityClaimPromptRoute = CommunityClaimPromptRouteImport.update({
+  id: '/claim-prompt',
+  path: '/claim-prompt',
+  getParentRoute: () => CommunityRoute,
+} as any)
+const CommunityConflictRoute = CommunityConflictRouteImport.update({
+  id: '/conflict',
+  path: '/conflict',
+  getParentRoute: () => CommunityRoute,
+} as any)
+const CommunityFeedRoute = CommunityFeedRouteImport.update({
+  id: '/feed',
+  path: '/feed',
+  getParentRoute: () => CommunityRoute,
+} as any)
+const CommunityNotificationsRoute = CommunityNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => CommunityRoute,
+} as any)
+const CommunityProfileRoute = CommunityProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => CommunityRoute,
+} as any)
+const CommunitySightingRoute = CommunitySightingRouteImport.update({
+  id: '/sighting',
+  path: '/sighting',
+  getParentRoute: () => CommunityRoute,
+} as any)
+const CommunitySosRoute = CommunitySosRouteImport.update({
+  id: '/sos',
+  path: '/sos',
+  getParentRoute: () => CommunityRoute,
 } as any)
 const PortalIndexRoute = PortalIndexRouteImport.update({
   id: '/',
@@ -40,6 +134,16 @@ const PortalAssignmentsRoute = PortalAssignmentsRouteImport.update({
   path: '/assignments',
   getParentRoute: () => PortalRoute,
 } as any)
+const PortalAuditRoute = PortalAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => PortalRoute,
+} as any)
+const PortalClaimsRoute = PortalClaimsRouteImport.update({
+  id: '/claims',
+  path: '/claims',
+  getParentRoute: () => PortalRoute,
+} as any)
 const PortalConflictsRoute = PortalConflictsRouteImport.update({
   id: '/conflicts',
   path: '/conflicts',
@@ -48,6 +152,11 @@ const PortalConflictsRoute = PortalConflictsRouteImport.update({
 const PortalDashboardRoute = PortalDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => PortalRoute,
+} as any)
+const PortalFormsRoute = PortalFormsRouteImport.update({
+  id: '/forms',
+  path: '/forms',
   getParentRoute: () => PortalRoute,
 } as any)
 const PortalHotspotsRoute = PortalHotspotsRouteImport.update({
@@ -70,84 +179,263 @@ const PortalSettingsRoute = PortalSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => PortalRoute,
 } as any)
+const PortalSubmissionsRoute = PortalSubmissionsRouteImport.update({
+  id: '/submissions',
+  path: '/submissions',
+  getParentRoute: () => PortalRoute,
+} as any)
+const PortalVerifiedFormsRoute = PortalVerifiedFormsRouteImport.update({
+  id: '/verified-forms',
+  path: '/verified-forms',
+  getParentRoute: () => PortalRoute,
+} as any)
+const RangerIndexRoute = RangerIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => RangerRoute,
+} as any)
+const RangerIncidentRoute = RangerIncidentRouteImport.update({
+  id: '/incident',
+  path: '/incident',
+  getParentRoute: () => RangerRoute,
+} as any)
+const RangerMapRoute = RangerMapRouteImport.update({
+  id: '/map',
+  path: '/map',
+  getParentRoute: () => RangerRoute,
+} as any)
+const RangerProfileRoute = RangerProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => RangerRoute,
+} as any)
+const RangerTrackingRoute = RangerTrackingRouteImport.update({
+  id: '/tracking',
+  path: '/tracking',
+  getParentRoute: () => RangerRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/community': typeof CommunityRouteWithChildren
+  '/gps': typeof GpsRoute
   '/portal': typeof PortalRouteWithChildren
+  '/ranger': typeof RangerRouteWithChildren
+  '/community/alerts': typeof CommunityAlertsRoute
+  '/community/claim': typeof CommunityClaimRoute
+  '/community/claim-prompt': typeof CommunityClaimPromptRoute
+  '/community/conflict': typeof CommunityConflictRoute
+  '/community/feed': typeof CommunityFeedRoute
+  '/community/notifications': typeof CommunityNotificationsRoute
+  '/community/profile': typeof CommunityProfileRoute
+  '/community/sighting': typeof CommunitySightingRoute
+  '/community/sos': typeof CommunitySosRoute
   '/portal/assignments': typeof PortalAssignmentsRoute
+  '/portal/audit': typeof PortalAuditRoute
+  '/portal/claims': typeof PortalClaimsRoute
   '/portal/conflicts': typeof PortalConflictsRoute
   '/portal/dashboard': typeof PortalDashboardRoute
+  '/portal/forms': typeof PortalFormsRoute
   '/portal/hotspots': typeof PortalHotspotsRoute
   '/portal/incidents': typeof PortalIncidentsRoute
   '/portal/personnel': typeof PortalPersonnelRoute
   '/portal/settings': typeof PortalSettingsRoute
+  '/portal/submissions': typeof PortalSubmissionsRoute
+  '/portal/verified-forms': typeof PortalVerifiedFormsRoute
+  '/ranger/incident': typeof RangerIncidentRoute
+  '/ranger/map': typeof RangerMapRoute
+  '/ranger/profile': typeof RangerProfileRoute
+  '/ranger/tracking': typeof RangerTrackingRoute
+  '/community/': typeof CommunityIndexRoute
   '/portal/': typeof PortalIndexRoute
+  '/ranger/': typeof RangerIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/gps': typeof GpsRoute
+  '/community/alerts': typeof CommunityAlertsRoute
+  '/community/claim': typeof CommunityClaimRoute
+  '/community/claim-prompt': typeof CommunityClaimPromptRoute
+  '/community/conflict': typeof CommunityConflictRoute
+  '/community/feed': typeof CommunityFeedRoute
+  '/community/notifications': typeof CommunityNotificationsRoute
+  '/community/profile': typeof CommunityProfileRoute
+  '/community/sighting': typeof CommunitySightingRoute
+  '/community/sos': typeof CommunitySosRoute
   '/portal/assignments': typeof PortalAssignmentsRoute
+  '/portal/audit': typeof PortalAuditRoute
+  '/portal/claims': typeof PortalClaimsRoute
   '/portal/conflicts': typeof PortalConflictsRoute
   '/portal/dashboard': typeof PortalDashboardRoute
+  '/portal/forms': typeof PortalFormsRoute
   '/portal/hotspots': typeof PortalHotspotsRoute
   '/portal/incidents': typeof PortalIncidentsRoute
   '/portal/personnel': typeof PortalPersonnelRoute
   '/portal/settings': typeof PortalSettingsRoute
+  '/portal/submissions': typeof PortalSubmissionsRoute
+  '/portal/verified-forms': typeof PortalVerifiedFormsRoute
+  '/ranger/incident': typeof RangerIncidentRoute
+  '/ranger/map': typeof RangerMapRoute
+  '/ranger/profile': typeof RangerProfileRoute
+  '/ranger/tracking': typeof RangerTrackingRoute
+  '/community': typeof CommunityIndexRoute
   '/portal': typeof PortalIndexRoute
+  '/ranger': typeof RangerIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/community': typeof CommunityRouteWithChildren
+  '/gps': typeof GpsRoute
   '/portal': typeof PortalRouteWithChildren
+  '/ranger': typeof RangerRouteWithChildren
+  '/community/alerts': typeof CommunityAlertsRoute
+  '/community/claim': typeof CommunityClaimRoute
+  '/community/claim-prompt': typeof CommunityClaimPromptRoute
+  '/community/conflict': typeof CommunityConflictRoute
+  '/community/feed': typeof CommunityFeedRoute
+  '/community/notifications': typeof CommunityNotificationsRoute
+  '/community/profile': typeof CommunityProfileRoute
+  '/community/sighting': typeof CommunitySightingRoute
+  '/community/sos': typeof CommunitySosRoute
   '/portal/assignments': typeof PortalAssignmentsRoute
+  '/portal/audit': typeof PortalAuditRoute
+  '/portal/claims': typeof PortalClaimsRoute
   '/portal/conflicts': typeof PortalConflictsRoute
   '/portal/dashboard': typeof PortalDashboardRoute
+  '/portal/forms': typeof PortalFormsRoute
   '/portal/hotspots': typeof PortalHotspotsRoute
   '/portal/incidents': typeof PortalIncidentsRoute
   '/portal/personnel': typeof PortalPersonnelRoute
   '/portal/settings': typeof PortalSettingsRoute
+  '/portal/submissions': typeof PortalSubmissionsRoute
+  '/portal/verified-forms': typeof PortalVerifiedFormsRoute
+  '/ranger/incident': typeof RangerIncidentRoute
+  '/ranger/map': typeof RangerMapRoute
+  '/ranger/profile': typeof RangerProfileRoute
+  '/ranger/tracking': typeof RangerTrackingRoute
+  '/community/': typeof CommunityIndexRoute
   '/portal/': typeof PortalIndexRoute
+  '/ranger/': typeof RangerIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth'
+    | '/community'
+    | '/gps'
     | '/portal'
+    | '/ranger'
+    | '/community/alerts'
+    | '/community/claim'
+    | '/community/claim-prompt'
+    | '/community/conflict'
+    | '/community/feed'
+    | '/community/notifications'
+    | '/community/profile'
+    | '/community/sighting'
+    | '/community/sos'
     | '/portal/assignments'
+    | '/portal/audit'
+    | '/portal/claims'
     | '/portal/conflicts'
     | '/portal/dashboard'
+    | '/portal/forms'
     | '/portal/hotspots'
     | '/portal/incidents'
     | '/portal/personnel'
     | '/portal/settings'
+    | '/portal/submissions'
+    | '/portal/verified-forms'
+    | '/ranger/incident'
+    | '/ranger/map'
+    | '/ranger/profile'
+    | '/ranger/tracking'
+    | '/community/'
     | '/portal/'
+    | '/ranger/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/auth'
+    | '/gps'
+    | '/community/alerts'
+    | '/community/claim'
+    | '/community/claim-prompt'
+    | '/community/conflict'
+    | '/community/feed'
+    | '/community/notifications'
+    | '/community/profile'
+    | '/community/sighting'
+    | '/community/sos'
     | '/portal/assignments'
+    | '/portal/audit'
+    | '/portal/claims'
     | '/portal/conflicts'
     | '/portal/dashboard'
+    | '/portal/forms'
     | '/portal/hotspots'
     | '/portal/incidents'
     | '/portal/personnel'
     | '/portal/settings'
+    | '/portal/submissions'
+    | '/portal/verified-forms'
+    | '/ranger/incident'
+    | '/ranger/map'
+    | '/ranger/profile'
+    | '/ranger/tracking'
+    | '/community'
     | '/portal'
+    | '/ranger'
   id:
     | '__root__'
     | '/'
+    | '/auth'
+    | '/community'
+    | '/gps'
     | '/portal'
+    | '/ranger'
+    | '/community/alerts'
+    | '/community/claim'
+    | '/community/claim-prompt'
+    | '/community/conflict'
+    | '/community/feed'
+    | '/community/notifications'
+    | '/community/profile'
+    | '/community/sighting'
+    | '/community/sos'
     | '/portal/assignments'
+    | '/portal/audit'
+    | '/portal/claims'
     | '/portal/conflicts'
     | '/portal/dashboard'
+    | '/portal/forms'
     | '/portal/hotspots'
     | '/portal/incidents'
     | '/portal/personnel'
     | '/portal/settings'
+    | '/portal/submissions'
+    | '/portal/verified-forms'
+    | '/ranger/incident'
+    | '/ranger/map'
+    | '/ranger/profile'
+    | '/ranger/tracking'
+    | '/community/'
     | '/portal/'
+    | '/ranger/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRoute
+  CommunityRoute: typeof CommunityRouteWithChildren
+  GpsRoute: typeof GpsRoute
   PortalRoute: typeof PortalRouteWithChildren
+  RangerRoute: typeof RangerRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -159,12 +447,110 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/community': {
+      id: '/community'
+      path: '/community'
+      fullPath: '/community'
+      preLoaderRoute: typeof CommunityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gps': {
+      id: '/gps'
+      path: '/gps'
+      fullPath: '/gps'
+      preLoaderRoute: typeof GpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/portal': {
       id: '/portal'
       path: '/portal'
       fullPath: '/portal'
       preLoaderRoute: typeof PortalRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/ranger': {
+      id: '/ranger'
+      path: '/ranger'
+      fullPath: '/ranger'
+      preLoaderRoute: typeof RangerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/community/': {
+      id: '/community/'
+      path: '/'
+      fullPath: '/community/'
+      preLoaderRoute: typeof CommunityIndexRouteImport
+      parentRoute: typeof CommunityRoute
+    }
+    '/community/alerts': {
+      id: '/community/alerts'
+      path: '/alerts'
+      fullPath: '/community/alerts'
+      preLoaderRoute: typeof CommunityAlertsRouteImport
+      parentRoute: typeof CommunityRoute
+    }
+    '/community/claim': {
+      id: '/community/claim'
+      path: '/claim'
+      fullPath: '/community/claim'
+      preLoaderRoute: typeof CommunityClaimRouteImport
+      parentRoute: typeof CommunityRoute
+    }
+    '/community/claim-prompt': {
+      id: '/community/claim-prompt'
+      path: '/claim-prompt'
+      fullPath: '/community/claim-prompt'
+      preLoaderRoute: typeof CommunityClaimPromptRouteImport
+      parentRoute: typeof CommunityRoute
+    }
+    '/community/conflict': {
+      id: '/community/conflict'
+      path: '/conflict'
+      fullPath: '/community/conflict'
+      preLoaderRoute: typeof CommunityConflictRouteImport
+      parentRoute: typeof CommunityRoute
+    }
+    '/community/feed': {
+      id: '/community/feed'
+      path: '/feed'
+      fullPath: '/community/feed'
+      preLoaderRoute: typeof CommunityFeedRouteImport
+      parentRoute: typeof CommunityRoute
+    }
+    '/community/notifications': {
+      id: '/community/notifications'
+      path: '/notifications'
+      fullPath: '/community/notifications'
+      preLoaderRoute: typeof CommunityNotificationsRouteImport
+      parentRoute: typeof CommunityRoute
+    }
+    '/community/profile': {
+      id: '/community/profile'
+      path: '/profile'
+      fullPath: '/community/profile'
+      preLoaderRoute: typeof CommunityProfileRouteImport
+      parentRoute: typeof CommunityRoute
+    }
+    '/community/sighting': {
+      id: '/community/sighting'
+      path: '/sighting'
+      fullPath: '/community/sighting'
+      preLoaderRoute: typeof CommunitySightingRouteImport
+      parentRoute: typeof CommunityRoute
+    }
+    '/community/sos': {
+      id: '/community/sos'
+      path: '/sos'
+      fullPath: '/community/sos'
+      preLoaderRoute: typeof CommunitySosRouteImport
+      parentRoute: typeof CommunityRoute
     }
     '/portal/': {
       id: '/portal/'
@@ -180,6 +566,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalAssignmentsRouteImport
       parentRoute: typeof PortalRoute
     }
+    '/portal/audit': {
+      id: '/portal/audit'
+      path: '/audit'
+      fullPath: '/portal/audit'
+      preLoaderRoute: typeof PortalAuditRouteImport
+      parentRoute: typeof PortalRoute
+    }
+    '/portal/claims': {
+      id: '/portal/claims'
+      path: '/claims'
+      fullPath: '/portal/claims'
+      preLoaderRoute: typeof PortalClaimsRouteImport
+      parentRoute: typeof PortalRoute
+    }
     '/portal/conflicts': {
       id: '/portal/conflicts'
       path: '/conflicts'
@@ -192,6 +592,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/portal/dashboard'
       preLoaderRoute: typeof PortalDashboardRouteImport
+      parentRoute: typeof PortalRoute
+    }
+    '/portal/forms': {
+      id: '/portal/forms'
+      path: '/forms'
+      fullPath: '/portal/forms'
+      preLoaderRoute: typeof PortalFormsRouteImport
       parentRoute: typeof PortalRoute
     }
     '/portal/hotspots': {
@@ -222,37 +629,149 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalSettingsRouteImport
       parentRoute: typeof PortalRoute
     }
+    '/portal/submissions': {
+      id: '/portal/submissions'
+      path: '/submissions'
+      fullPath: '/portal/submissions'
+      preLoaderRoute: typeof PortalSubmissionsRouteImport
+      parentRoute: typeof PortalRoute
+    }
+    '/portal/verified-forms': {
+      id: '/portal/verified-forms'
+      path: '/verified-forms'
+      fullPath: '/portal/verified-forms'
+      preLoaderRoute: typeof PortalVerifiedFormsRouteImport
+      parentRoute: typeof PortalRoute
+    }
+    '/ranger/': {
+      id: '/ranger/'
+      path: '/'
+      fullPath: '/ranger/'
+      preLoaderRoute: typeof RangerIndexRouteImport
+      parentRoute: typeof RangerRoute
+    }
+    '/ranger/incident': {
+      id: '/ranger/incident'
+      path: '/incident'
+      fullPath: '/ranger/incident'
+      preLoaderRoute: typeof RangerIncidentRouteImport
+      parentRoute: typeof RangerRoute
+    }
+    '/ranger/map': {
+      id: '/ranger/map'
+      path: '/map'
+      fullPath: '/ranger/map'
+      preLoaderRoute: typeof RangerMapRouteImport
+      parentRoute: typeof RangerRoute
+    }
+    '/ranger/profile': {
+      id: '/ranger/profile'
+      path: '/profile'
+      fullPath: '/ranger/profile'
+      preLoaderRoute: typeof RangerProfileRouteImport
+      parentRoute: typeof RangerRoute
+    }
+    '/ranger/tracking': {
+      id: '/ranger/tracking'
+      path: '/tracking'
+      fullPath: '/ranger/tracking'
+      preLoaderRoute: typeof RangerTrackingRouteImport
+      parentRoute: typeof RangerRoute
+    }
   }
 }
 
+interface CommunityRouteChildren {
+  CommunityAlertsRoute: typeof CommunityAlertsRoute
+  CommunityClaimRoute: typeof CommunityClaimRoute
+  CommunityClaimPromptRoute: typeof CommunityClaimPromptRoute
+  CommunityConflictRoute: typeof CommunityConflictRoute
+  CommunityFeedRoute: typeof CommunityFeedRoute
+  CommunityNotificationsRoute: typeof CommunityNotificationsRoute
+  CommunityProfileRoute: typeof CommunityProfileRoute
+  CommunitySightingRoute: typeof CommunitySightingRoute
+  CommunitySosRoute: typeof CommunitySosRoute
+  CommunityIndexRoute: typeof CommunityIndexRoute
+}
+
+const CommunityRouteChildren: CommunityRouteChildren = {
+  CommunityAlertsRoute: CommunityAlertsRoute,
+  CommunityClaimRoute: CommunityClaimRoute,
+  CommunityClaimPromptRoute: CommunityClaimPromptRoute,
+  CommunityConflictRoute: CommunityConflictRoute,
+  CommunityFeedRoute: CommunityFeedRoute,
+  CommunityNotificationsRoute: CommunityNotificationsRoute,
+  CommunityProfileRoute: CommunityProfileRoute,
+  CommunitySightingRoute: CommunitySightingRoute,
+  CommunitySosRoute: CommunitySosRoute,
+  CommunityIndexRoute: CommunityIndexRoute,
+}
+
+const CommunityRouteWithChildren = CommunityRoute._addFileChildren(
+  CommunityRouteChildren,
+)
+
 interface PortalRouteChildren {
   PortalAssignmentsRoute: typeof PortalAssignmentsRoute
+  PortalAuditRoute: typeof PortalAuditRoute
+  PortalClaimsRoute: typeof PortalClaimsRoute
   PortalConflictsRoute: typeof PortalConflictsRoute
   PortalDashboardRoute: typeof PortalDashboardRoute
+  PortalFormsRoute: typeof PortalFormsRoute
   PortalHotspotsRoute: typeof PortalHotspotsRoute
   PortalIncidentsRoute: typeof PortalIncidentsRoute
   PortalPersonnelRoute: typeof PortalPersonnelRoute
   PortalSettingsRoute: typeof PortalSettingsRoute
+  PortalSubmissionsRoute: typeof PortalSubmissionsRoute
+  PortalVerifiedFormsRoute: typeof PortalVerifiedFormsRoute
   PortalIndexRoute: typeof PortalIndexRoute
 }
 
 const PortalRouteChildren: PortalRouteChildren = {
   PortalAssignmentsRoute: PortalAssignmentsRoute,
+  PortalAuditRoute: PortalAuditRoute,
+  PortalClaimsRoute: PortalClaimsRoute,
   PortalConflictsRoute: PortalConflictsRoute,
   PortalDashboardRoute: PortalDashboardRoute,
+  PortalFormsRoute: PortalFormsRoute,
   PortalHotspotsRoute: PortalHotspotsRoute,
   PortalIncidentsRoute: PortalIncidentsRoute,
   PortalPersonnelRoute: PortalPersonnelRoute,
   PortalSettingsRoute: PortalSettingsRoute,
+  PortalSubmissionsRoute: PortalSubmissionsRoute,
+  PortalVerifiedFormsRoute: PortalVerifiedFormsRoute,
   PortalIndexRoute: PortalIndexRoute,
 }
 
 const PortalRouteWithChildren =
   PortalRoute._addFileChildren(PortalRouteChildren)
 
+interface RangerRouteChildren {
+  RangerIncidentRoute: typeof RangerIncidentRoute
+  RangerMapRoute: typeof RangerMapRoute
+  RangerProfileRoute: typeof RangerProfileRoute
+  RangerTrackingRoute: typeof RangerTrackingRoute
+  RangerIndexRoute: typeof RangerIndexRoute
+}
+
+const RangerRouteChildren: RangerRouteChildren = {
+  RangerIncidentRoute: RangerIncidentRoute,
+  RangerMapRoute: RangerMapRoute,
+  RangerProfileRoute: RangerProfileRoute,
+  RangerTrackingRoute: RangerTrackingRoute,
+  RangerIndexRoute: RangerIndexRoute,
+}
+
+const RangerRouteWithChildren =
+  RangerRoute._addFileChildren(RangerRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthRoute: AuthRoute,
+  CommunityRoute: CommunityRouteWithChildren,
+  GpsRoute: GpsRoute,
   PortalRoute: PortalRouteWithChildren,
+  RangerRoute: RangerRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
