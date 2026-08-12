@@ -45,6 +45,8 @@ services:
         sync: false
       - key: DB_PASSWORD
         sync: false
+      - key: DB_SSLMODE
+        value: require # Neon mandates SSL; Laravel's pgsql default ('prefer') isn't forceful enough
       - key: SESSION_DRIVER
         value: file
       - key: CACHE_STORE
