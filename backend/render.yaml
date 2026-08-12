@@ -1,0 +1,69 @@
+# Render Blueprint for the WildWatch Laravel API. See HOSTED-CUTOVER-PLAN.md for
+# the full cutover procedure and open decisions. Deploy via Render's "New Blueprint"
+# flow pointing at this repo/branch, or apply manually via the Render dashboard using
+# these same settings if Blueprint sync isn't wanted.
+#
+# Variables marked `sync: false` are NOT set here on purpose - they're secrets or
+# environment-specific values that must be entered directly in the Render dashboard,
+# never committed to this file or the repo.
+#
+# Known limitation, not a bug: Render's free plan spins down after ~15 minutes of
+# inactivity; the first request after that is slow to wake. Accepted tradeoff for a
+# low-traffic internal tool - see HOSTED-CUTOVER-PLAN.md section 5.
+
+services:
+  - type: web
+    name: wildwatch-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    envVars:
+      - key: APP_NAME
+        value: "WildWatch Admin API"
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_KEY
+        sync: false # generate fresh for this environment - do not reuse a local one
+      - key: APP_URL
+        sync: false # this service's own Render URL, filled in after first deploy
+      - key: LOG_CHANNEL
+        value: stack
+      - key: LOG_LEVEL
+        value: warning
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        sync: false # Neon connection host
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_DATABASE
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: SESSION_DRIVER
+        value: file
+      - key: CACHE_STORE
+        value: file
+      - key: QUEUE_CONNECTION
+        value: sync # no queued jobs exist in this codebase yet - see HOSTED-CUTOVER-PLAN.md
+      - key: SANCTUM_STATEFUL_DOMAINS
+        sync: false # the real portal frontend origin (Cloudflare Workers URL)
+      - key: FRONTEND_URL
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false # same origin as FRONTEND_URL
+      - key: FIREBASE_BRIDGE_SECRET
+        sync: false # must match the real Firebase project's Cloud Functions config exactly
+      - key: MAIL_MAILER
+        value: resend
+      - key: MAIL_FROM_ADDRESS
+        value: "noreply@wildwatch.app"
+      - key: MAIL_FROM_NAME
+        value: "WildWatch"
+      - key: RESEND_API_KEY
+        sync: false
