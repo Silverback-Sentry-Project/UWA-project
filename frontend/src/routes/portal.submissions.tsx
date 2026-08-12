@@ -34,7 +34,12 @@ const TABS: { key: Submission["status"] | "All"; label: string }[] = [
 ];
 
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function Submissions() {
@@ -57,7 +62,10 @@ function Submissions() {
     setBusy(true);
     setErr(null);
     try {
-      await apiFetch(`/gamepark/submissions/${id}/verify`, { method: "POST", body: JSON.stringify({ decision, notes: notes || undefined }) });
+      await apiFetch(`/gamepark/submissions/${id}/verify`, {
+        method: "POST",
+        body: JSON.stringify({ decision, notes: notes || undefined }),
+      });
       await queryClient.invalidateQueries({ queryKey: ["gamepark-submissions"] });
       setNotes("");
     } catch (e) {
@@ -81,7 +89,10 @@ function Submissions() {
   }
 
   return (
-    <PortalShell title="Submissions" subtitle="Review, verify, and forward filled-in forms to the UWA portal.">
+    <PortalShell
+      title="Submissions"
+      subtitle="Review, verify, and forward filled-in forms to the UWA portal."
+    >
       <div className="flex items-center gap-1.5 mb-4">
         {TABS.map((t) => (
           <button
@@ -94,7 +105,9 @@ function Submissions() {
         ))}
       </div>
 
-      {isLoading && <div className="portal-card p-6 text-sm text-[var(--p-ink-soft)]">Loading submissions…</div>}
+      {isLoading && (
+        <div className="portal-card p-6 text-sm text-[var(--p-ink-soft)]">Loading submissions…</div>
+      )}
       {!isLoading && filtered.length === 0 && (
         <div className="portal-card p-8 text-center text-[13px] text-[var(--p-ink-soft)]">
           <Inbox className="mx-auto mb-2 text-[var(--p-olive)]" size={28} />
@@ -107,7 +120,11 @@ function Submissions() {
           {filtered.map((s) => (
             <button
               key={s.submission_id}
-              onClick={() => { setOpenId(s.submission_id); setNotes(""); setErr(null); }}
+              onClick={() => {
+                setOpenId(s.submission_id);
+                setNotes("");
+                setErr(null);
+              }}
               className={`w-full text-left portal-card p-3 transition ${openId === s.submission_id ? "border-[var(--p-olive)]" : ""}`}
             >
               <div className="flex items-center justify-between">
@@ -117,13 +134,19 @@ function Submissions() {
               <div className="mt-1 flex items-center gap-1.5 text-[11px] text-[var(--p-ink-soft)]">
                 <User size={11} /> {s.submitted_by_name ?? "Anonymous"}
               </div>
-              <div className="mt-1 text-[10px] text-[var(--p-ink-soft)]">{fmtDate(s.created_at)}</div>
+              <div className="mt-1 text-[10px] text-[var(--p-ink-soft)]">
+                {fmtDate(s.created_at)}
+              </div>
             </button>
           ))}
         </div>
 
         <div className="col-span-7">
-          {!open && <div className="portal-card p-8 text-center text-[13px] text-[var(--p-ink-soft)]">Select a submission to review its answers.</div>}
+          {!open && (
+            <div className="portal-card p-8 text-center text-[13px] text-[var(--p-ink-soft)]">
+              Select a submission to review its answers.
+            </div>
+          )}
           {open && (
             <div className="portal-card p-4">
               <div className="flex items-center justify-between">
@@ -131,18 +154,31 @@ function Submissions() {
                 <StatusBadge status={open.status} />
               </div>
               <div className="mt-1 text-[11px] text-[var(--p-ink-soft)]">
-                Submitted by {open.submitted_by_name ?? "Anonymous"} {open.submitted_by_contact ? `· ${open.submitted_by_contact}` : ""} · {fmtDate(open.created_at)}
+                Submitted by {open.submitted_by_name ?? "Anonymous"}{" "}
+                {open.submitted_by_contact ? `· ${open.submitted_by_contact}` : ""} ·{" "}
+                {fmtDate(open.created_at)}
               </div>
 
               <div className="mt-3 space-y-2">
                 {open.answers.map((a) => (
-                  <div key={a.answer_id} className="border border-[var(--p-olive-line)] rounded-md p-2.5">
-                    <div className="text-[10px] uppercase tracking-wider text-[var(--p-ink-soft)] font-semibold">{a.field.label}</div>
+                  <div
+                    key={a.answer_id}
+                    className="border border-[var(--p-olive-line)] rounded-md p-2.5"
+                  >
+                    <div className="text-[10px] uppercase tracking-wider text-[var(--p-ink-soft)] font-semibold">
+                      {a.field.label}
+                    </div>
                     {a.field.field_type === "image" ? (
                       a.image_path ? (
-                        <img src={a.image_path} alt={a.field.label} className="mt-1 max-h-40 rounded-md" />
+                        <img
+                          src={a.image_path}
+                          alt={a.field.label}
+                          className="mt-1 max-h-40 rounded-md"
+                        />
                       ) : (
-                        <div className="text-[12px] text-[var(--p-ink-soft)] mt-0.5">No photo attached.</div>
+                        <div className="text-[12px] text-[var(--p-ink-soft)] mt-0.5">
+                          No photo attached.
+                        </div>
                       )
                     ) : (
                       <div className="text-[13px] mt-0.5">{a.value || "—"}</div>
@@ -153,7 +189,8 @@ function Submissions() {
 
               {open.verification_notes && (
                 <div className="mt-3 text-[12px] text-[var(--p-ink-soft)] bg-[var(--p-olive-soft)] rounded-md p-2.5">
-                  <span className="font-semibold">Review notes: </span>{open.verification_notes}
+                  <span className="font-semibold">Review notes: </span>
+                  {open.verification_notes}
                 </div>
               )}
 
@@ -167,14 +204,30 @@ function Submissions() {
                     onChange={(e) => setNotes(e.target.value)}
                   />
                   <div className="flex items-center gap-2">
-                    <button className="portal-btn flex-1 justify-center" disabled={busy} onClick={() => decide(open.submission_id, "verify")}><CheckCircle2 size={13} /> Verify</button>
-                    <button className="portal-btn portal-btn-ghost flex-1 justify-center text-[var(--p-danger)]" disabled={busy} onClick={() => decide(open.submission_id, "reject")}><XCircle size={13} /> Reject</button>
+                    <button
+                      className="portal-btn flex-1 justify-center"
+                      disabled={busy}
+                      onClick={() => decide(open.submission_id, "verify")}
+                    >
+                      <CheckCircle2 size={13} /> Verify
+                    </button>
+                    <button
+                      className="portal-btn portal-btn-ghost flex-1 justify-center text-[var(--p-danger)]"
+                      disabled={busy}
+                      onClick={() => decide(open.submission_id, "reject")}
+                    >
+                      <XCircle size={13} /> Reject
+                    </button>
                   </div>
                 </div>
               )}
 
               {open.status === "Verified" && (
-                <button className="portal-btn portal-btn-gold w-full justify-center mt-4" disabled={busy} onClick={() => forward(open.submission_id)}>
+                <button
+                  className="portal-btn portal-btn-gold w-full justify-center mt-4"
+                  disabled={busy}
+                  onClick={() => forward(open.submission_id)}
+                >
                   <Send size={13} /> Forward to UWA portal
                 </button>
               )}
@@ -185,7 +238,11 @@ function Submissions() {
                 </div>
               )}
 
-              {err && <div className="mt-3 text-[12px] text-[var(--p-danger)] bg-[var(--p-danger)]/10 border border-[var(--p-danger)]/30 rounded-md px-3 py-2">{err}</div>}
+              {err && (
+                <div className="mt-3 text-[12px] text-[var(--p-danger)] bg-[var(--p-danger)]/10 border border-[var(--p-danger)]/30 rounded-md px-3 py-2">
+                  {err}
+                </div>
+              )}
             </div>
           )}
         </div>

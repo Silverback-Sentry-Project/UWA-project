@@ -9,7 +9,10 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
 /**
- * Seeds bridge-test users whose emails/roles match seed-shared-fixtures.json.
+ * Links Laravel users to their Firebase UID and assigned park using
+ * seed-shared-fixtures.json, so the "same" dev account (e.g. ranger@wildwatch.app)
+ * resolves to the same person on both sides of the bridge. Called from
+ * DatabaseSeeder::run() - parks themselves are seeded there, not here.
  */
 class BridgeFixturesSeeder extends Seeder
 {
@@ -29,15 +32,22 @@ class BridgeFixturesSeeder extends Seeder
         /** @var array<string, mixed> $fixtures */
         $fixtures = json_decode(file_get_contents($fixturesPath), true, 512, JSON_THROW_ON_ERROR);
 
-        $parkName = $fixtures['park']['mysql_name'] ?? 'Bwindi Impenetrable National Park';
-        $park = Park::firstOrCreate(
-            ['park_name' => $parkName],
-            [
-                'district' => $fixtures['park']['district'] ?? 'Kanungu',
-                'description' => 'Bridge seed park',
-            ],
-        );
+        $this->applyFixtures($fixtures);
+    }
 
+    /**
+     * Split from run() so tests can exercise the resolution logic directly with a constructed
+     * fixtures array, instead of having to mutate the real shared-fixtures file on disk.
+     *
+     * @param  array<string, mixed>  $fixtures
+     */
+    public function applyFixtures(array $fixtures): void
+    {
+        // Parks themselves are seeded by DatabaseSeeder (all 10, each with a firestore_id
+        // matching this same fixtures file) - this seeder only needs to resolve each user's
+        // fixture park_id (a Firestore slug, e.g. "queen-elizabeth") to the matching row.
+        // Previously this only ever checked against the single fixtures['park'] entry, so a
+        // user assigned to any park other than Bwindi silently never got a park_id set.
         foreach ($fixtures['users'] as $fixture) {
             $nameParts = explode(' ', $fixture['display_name'], 2);
             $user = User::firstOrCreate(
@@ -62,11 +72,16 @@ class BridgeFixturesSeeder extends Seeder
                 }
             }
 
-            if (! empty($fixture['park_id']) && $fixture['park_id'] === ($fixtures['park']['firestore_id'] ?? null)) {
-                $user->update(['park_id' => $park->park_id]);
+            if (! empty($fixture['park_id'])) {
+                $park = Park::where('firestore_id', $fixture['park_id'])->first();
+                if ($park) {
+                    $user->update(['park_id' => $park->park_id]);
+                } else {
+                    $this->command?->warn("Bridge fixtures: no park with firestore_id={$fixture['park_id']} for {$fixture['email']}");
+                }
             }
         }
 
-        $this->command?->info("Bridge fixtures seeded (park_id={$park->park_id})");
+        $this->command?->info('Bridge fixtures seeded ('.count($fixtures['users']).' users)');
     }
 }

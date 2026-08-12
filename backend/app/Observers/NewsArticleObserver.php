@@ -30,6 +30,7 @@ class NewsArticleObserver
             'body' => $article->body,
             'category' => $article->category,
             'source' => $article->source,
+            'park_id' => (string) $article->park_id,
             'readTime' => $article->read_time,
             'theme' => Str::lower($article->theme),
             'likes' => 0,

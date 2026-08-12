@@ -1,7 +1,7 @@
-
 ## Goal
 
 Split the prototype into two surfaces:
+
 1. **Mobile app** (existing `PhoneFrame` layout) — Community Member + Ranger only. UWA Official is removed.
 2. **UWA Web Portal** — new full-width desktop admin experience in olive green / gold / white / black, rendered outside the phone frame.
 
@@ -22,6 +22,7 @@ Both still run in the same TanStack Start project so reviewers can navigate betw
 A new route tree that does NOT use `PhoneFrame`. Full-bleed desktop layout with a fixed left sidebar (logo, nav, signed-in admin), a top bar (park selector, search, profile menu), and a main content area.
 
 ### Route map
+
 - `/portal` — login screen (email + password, MFA code field, "Authorized personnel only" notice).
 - `/portal/dashboard` — Incident Monitoring Dashboard (default after login).
 - `/portal/incidents` — full incidents table with filters.
@@ -33,6 +34,7 @@ A new route tree that does NOT use `PhoneFrame`. Full-bleed desktop layout with 
 - `/portal/settings` — RBAC / personnel admin (read-only mock).
 
 ### Shared portal shell
+
 - `src/components/portal/PortalShell.tsx` — sidebar + topbar + `<Outlet/>`.
 - `src/components/portal/StatCard.tsx`, `DataTable.tsx`, `FilterBar.tsx`, `HeatmapCanvas.tsx`, `StatusBadge.tsx`, `Timeline.tsx` — reusable building blocks.
 - Pathless layout route `src/routes/portal/route.tsx` wraps all `/portal/*` children in `PortalShell` (except `/portal` login).
@@ -56,7 +58,9 @@ A new route tree that does NOT use `PhoneFrame`. Full-bleed desktop layout with 
 **Settings** — Personnel list with roles (Super Admin, Reviewer, Finance, Warden Coordinator), MFA status, last login. Visual only.
 
 ### Design system (portal only, additive)
+
 Extend `src/styles.css` with a `.portal` scope defining portal tokens:
+
 - `--portal-olive: oklch(...)` deep olive green (primary)
 - `--portal-olive-soft` for surfaces
 - `--portal-gold` for highlights, KPI accents, primary CTAs
@@ -67,19 +71,22 @@ Extend `src/styles.css` with a `.portal` scope defining portal tokens:
 Mobile app tokens are untouched.
 
 ### Security surface (visual only — this is a prototype)
+
 - Login screen shows MFA field + "Authorized UWA personnel only" banner.
 - Topbar shows signed-in role badge.
 - Audit log page demonstrates traceability.
 - Claim/assignment actions show "Action will be logged" confirmation dialogs.
-No real auth, encryption, or RBAC enforcement is implemented — this is a high-fidelity mockup, consistent with the rest of the prototype.
+  No real auth, encryption, or RBAC enforcement is implemented — this is a high-fidelity mockup, consistent with the rest of the prototype.
 
 ## 3. Out of scope
+
 - Real authentication, RBAC enforcement, encryption, or backend persistence (prototype only; mock data in-memory).
 - Real GIS / Mapbox integration — hotspots are stylized SVG/Canvas visualizations.
 - Translating portal UI by selected language (portal is English-only for admins).
 - Changes to existing Community or Ranger mobile screens beyond removing the UWA chooser entry.
 
 ## 4. Files touched (summary)
+
 - Delete: `src/routes/uwa*.tsx` (5 files).
 - Edit: `src/routes/index.tsx`, `src/routes/auth.tsx`, `src/styles.css`.
 - Add: `src/routes/portal/route.tsx`, `src/routes/portal/index.tsx` (login), `dashboard.tsx`, `incidents.tsx`, `hotspots.tsx`, `assignments.tsx`, `claims.tsx`, `conflicts.tsx`, `audit.tsx`, `settings.tsx`.

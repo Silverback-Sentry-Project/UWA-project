@@ -22,24 +22,38 @@ function Gps() {
               <MapPin size={56} className="text-white" />
             </div>
           </div>
-          <h1 className="text-2xl font-extrabold" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+          <h1
+            className="text-2xl font-extrabold"
+            style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+          >
             Enable Location Access
           </h1>
           <p className="text-muted-foreground text-sm mt-3 leading-relaxed">
-            Wildwatch uses your GPS to accurately tag wildlife sightings and incident reports — helping rangers respond faster.
+            Wildwatch uses your GPS to accurately tag wildlife sightings and incident reports —
+            helping rangers respond faster.
           </p>
 
           <div className="mt-8 w-full space-y-3">
-            <Row icon={Navigation} title="Precise reporting" desc="Tag sightings to exact coordinates" />
+            <Row
+              icon={Navigation}
+              title="Precise reporting"
+              desc="Tag sightings to exact coordinates"
+            />
             <Row icon={Shield} title="Faster response" desc="Rangers see incidents in real time" />
           </div>
         </div>
 
         <div className="px-6 pb-10 space-y-3">
-          <button onClick={() => nav({ to: dest })} className="w-full bg-primary text-primary-foreground py-4 rounded-2xl font-semibold shadow-md">
+          <button
+            onClick={() => nav({ to: dest })}
+            className="w-full bg-primary text-primary-foreground py-4 rounded-2xl font-semibold shadow-md"
+          >
             Allow While Using App
           </button>
-          <Link to={dest} className="block text-center text-muted-foreground text-sm font-medium py-2">
+          <Link
+            to={dest}
+            className="block text-center text-muted-foreground text-sm font-medium py-2"
+          >
             Not now
           </Link>
         </div>
@@ -51,7 +65,9 @@ function Gps() {
 function Row({ icon: Icon, title, desc }: { icon: any; title: string; desc: string }) {
   return (
     <div className="flex items-start gap-3 bg-card rounded-2xl p-3 shadow-card text-left">
-      <div className="h-10 w-10 rounded-xl bg-primary/10 grid place-items-center shrink-0"><Icon size={18} className="text-primary" /></div>
+      <div className="h-10 w-10 rounded-xl bg-primary/10 grid place-items-center shrink-0">
+        <Icon size={18} className="text-primary" />
+      </div>
       <div className="min-w-0">
         <div className="text-sm font-semibold">{title}</div>
         <div className="text-xs text-muted-foreground">{desc}</div>

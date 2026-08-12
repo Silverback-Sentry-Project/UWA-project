@@ -13,6 +13,7 @@ class NewsArticle extends Model
     protected $fillable = [
         'firestore_doc_id',
         'author_id',
+        'park_id',
         'title',
         'excerpt',
         'body',

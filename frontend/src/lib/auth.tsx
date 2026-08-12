@@ -13,7 +13,12 @@ export interface PortalUser {
 interface AuthContextValue {
   user: PortalUser | null;
   loading: boolean;
-  login: (params: { email?: string; password: string; accountType: "uwa" | "gamepark"; parkId?: string }) => Promise<void>;
+  login: (params: {
+    email?: string;
+    password: string;
+    accountType: "uwa" | "gamepark";
+    parkId?: string;
+  }) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -36,7 +41,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
-  async function login({ email, password, accountType, parkId }: { email?: string; password: string; accountType: "uwa" | "gamepark"; parkId?: string }) {
+  async function login({
+    email,
+    password,
+    accountType,
+    parkId,
+  }: {
+    email?: string;
+    password: string;
+    accountType: "uwa" | "gamepark";
+    parkId?: string;
+  }) {
     const data = await apiFetch<{ token: string; user: PortalUser }>("/login", {
       method: "POST",
       body: JSON.stringify({ email, password, account_type: accountType, park_id: parkId }),
@@ -55,7 +70,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }
 
-  return <AuthContext.Provider value={{ user, loading, login, logout }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, loading, login, logout }}>{children}</AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

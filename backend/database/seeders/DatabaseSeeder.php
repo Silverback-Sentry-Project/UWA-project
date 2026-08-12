@@ -15,36 +15,49 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $roles = [
-            'Community Member' => 'Reports incidents and tracks claims',
+            'Public' => 'Community members and tourists',
             'Ranger' => 'Responds to incidents',
-            'Community Wildlife Officer' => 'Coordinates community wildlife activities',
-            'Compensation Officer' => 'Reviews compensation claims',
             'UWA Official' => 'Approves claims and monitors analytics',
-            'Park Warden' => 'Supervises park operations',
             'System Administrator' => 'Manages the system',
-            'Gamepark Officer' => 'Logs in via the Gamepark portal for a single park: handles assignments, emergency notifications, and evidence forms',
+            // Referenced by EnsureWardenOrUwaOfficial/EnsureAdmin/UserController's
+            // GAMEPARK_INVITABLE_ROLES but never previously seeded - without these rows,
+            // Role::where('role_name', ...) lookups return null and role attachment
+            // silently no-ops (see BridgeFixturesSeeder's warden fixture, which needs
+            // 'Park Warden' to exist for its role attachment to actually do anything).
+            'Park Warden' => 'Manages a single park\'s gamepark portal',
+            'Gamepark Officer' => 'Park-scoped portal staff account',
+            'Community Wildlife Officer' => 'Community-facing park field staff',
         ];
 
         foreach ($roles as $name => $description) {
             Role::firstOrCreate(['role_name' => $name], ['description' => $description]);
         }
 
+        // firestore_id values must match android-native-backend-branch/scripts/fixtures/
+        // shared-seed-fixtures.json's parks[].firestore_id exactly - this is what lets a
+        // Firestore park doc and this MySQL row be recognized as "the same" record (see
+        // BRIDGE-CONTRACT.md's "Seed fixture ID mapping" section).
         $parks = [
-            ['park_name' => 'Bwindi Impenetrable National Park', 'district' => 'Kanungu', 'description' => 'Mountain gorilla habitat'],
-            ['park_name' => 'Mgahinga Gorilla National Park', 'district' => 'Kisoro', 'description' => 'Gorilla and golden monkey habitat'],
-            ['park_name' => 'Queen Elizabeth National Park', 'district' => 'Kasese', 'description' => 'Savannah wildlife park'],
-            ['park_name' => 'Murchison Falls National Park', 'district' => 'Masindi', 'description' => 'Largest national park in Uganda'],
-            ['park_name' => 'Kibale National Park', 'district' => 'Kabarole', 'description' => 'Primate capital of the world'],
-            ['park_name' => 'Semuliki National Park', 'district' => 'Bundibugyo', 'description' => 'Lowland tropical rainforest'],
-            ['park_name' => 'Rwenzori Mountains National Park', 'district' => 'Kasese', 'description' => 'Glacial mountain range'],
-            ['park_name' => 'Lake Mburo National Park', 'district' => 'Kiruhura', 'description' => 'Savannah and lake wildlife park'],
-            ['park_name' => 'Kidepo Valley National Park', 'district' => 'Kaabong', 'description' => 'Remote semi-arid savannah park'],
-            ['park_name' => 'Mount Elgon National Park', 'district' => 'Mbale', 'description' => 'Extinct volcano and caves'],
+            ['park_name' => 'Bwindi Impenetrable National Park', 'district' => 'Kanungu', 'description' => 'Mountain gorilla habitat', 'firestore_id' => 'bwindi-impenetrable'],
+            ['park_name' => 'Mgahinga Gorilla National Park', 'district' => 'Kisoro', 'description' => 'Gorilla and golden monkey habitat', 'firestore_id' => 'mgahinga-gorilla'],
+            ['park_name' => 'Queen Elizabeth National Park', 'district' => 'Kasese', 'description' => 'Savannah wildlife park', 'firestore_id' => 'queen-elizabeth'],
+            ['park_name' => 'Murchison Falls National Park', 'district' => 'Masindi', 'description' => 'Largest national park in Uganda', 'firestore_id' => 'murchison-falls'],
+            ['park_name' => 'Kibale National Park', 'district' => 'Kabarole', 'description' => 'Primate capital of the world', 'firestore_id' => 'kibale'],
+            ['park_name' => 'Semuliki National Park', 'district' => 'Bundibugyo', 'description' => 'Lowland tropical rainforest', 'firestore_id' => 'semuliki'],
+            ['park_name' => 'Rwenzori Mountains National Park', 'district' => 'Kasese', 'description' => 'Glacial mountain range', 'firestore_id' => 'rwenzori-mountains'],
+            ['park_name' => 'Lake Mburo National Park', 'district' => 'Kiruhura', 'description' => 'Savannah and lake wildlife park', 'firestore_id' => 'lake-mburo'],
+            ['park_name' => 'Kidepo Valley National Park', 'district' => 'Kaabong', 'description' => 'Remote semi-arid savannah park', 'firestore_id' => 'kidepo-valley'],
+            ['park_name' => 'Mount Elgon National Park', 'district' => 'Mbale', 'description' => 'Extinct volcano and caves', 'firestore_id' => 'mount-elgon'],
         ];
 
         foreach ($parks as $park) {
-            Park::firstOrCreate(['park_name' => $park['park_name']], $park);
+            Park::updateOrCreate(['park_name' => $park['park_name']], $park);
         }
+
+        // Bridge-test accounts (ranger@wildwatch.app etc.) linked to their Firebase UID and
+        // resolved park - see BridgeFixturesSeeder and BRIDGE-CONTRACT.md's "Seed fixture ID
+        // mapping". Needs the roles and parks above to already exist.
+        $this->call(BridgeFixturesSeeder::class);
 
         $species = [
             ['common_name' => 'Elephant', 'scientific_name' => 'Loxodonta africana', 'conservation_status' => 'Vulnerable'],
@@ -57,30 +70,10 @@ class DatabaseSeeder extends Seeder
             Species::firstOrCreate(['common_name' => $s['common_name']], $s);
         }
 
-        $gameparkRole = Role::where('role_name', 'Gamepark Officer')->first();
         $rangerRole = Role::where('role_name', 'Ranger')->first();
 
         foreach (Park::all() as $index => $park) {
             $slug = str($park->park_name)->before(' National Park')->slug('')->lower();
-
-            $gamepark = User::firstOrCreate(
-                ['email' => "{$slug}.gamepark@uwa.go.ug"],
-                [
-                    'first_name' => str($park->park_name)->before(' National Park')->value(),
-                    'last_name' => 'Gamepark',
-                    'password_hash' => Hash::make('Gamepark#'.($index + 1).'2026'),
-                    'account_status' => 'Active',
-                    'email_verified' => true,
-                    'park_id' => $park->park_id,
-                ]
-            );
-
-            if (! $gamepark->park_id) {
-                $gamepark->update(['park_id' => $park->park_id]);
-            }
-            if (! $gamepark->roles->contains($gameparkRole->role_id)) {
-                $gamepark->roles()->attach($gameparkRole->role_id);
-            }
 
             for ($r = 1; $r <= 3; $r++) {
                 $ranger = User::firstOrCreate(
@@ -104,26 +97,26 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        $reporter = User::firstOrCreate(
-            ['email' => 'community.reporter@wildwatch.app'],
+        $official = User::firstOrCreate(
+            ['email' => 'official@wildwatch.app'],
             [
-                'first_name' => 'Grace',
-                'last_name' => 'Kyomuhendo',
+                'first_name' => 'Bob',
+                'last_name' => 'Official',
                 'password_hash' => Hash::make('password123'),
                 'account_status' => 'Active',
                 'email_verified' => true,
             ]
         );
 
-        $communityRole = Role::where('role_name', 'Community Member')->first();
-        if (! $reporter->roles->contains($communityRole->role_id)) {
-            $reporter->roles()->attach($communityRole->role_id);
+        $officialRole = Role::where('role_name', 'UWA Official')->first();
+        if (! $official->roles->contains($officialRole->role_id)) {
+            $official->roles()->attach($officialRole->role_id);
         }
 
-        $this->seedIncidents($reporter);
+        $this->seedIncidents($official);
 
         $admin = User::firstOrCreate(
-            ['email' => 'admin@uwa.go.ug'],
+            ['email' => 'admin@wildwatch.app'],
             [
                 'first_name' => 'System',
                 'last_name' => 'Administrator',
@@ -138,17 +131,16 @@ class DatabaseSeeder extends Seeder
             $admin->roles()->attach($adminRole->role_id);
         }
 
-        $this->call(BridgeFixturesSeeder::class);
     }
 
-    private function seedIncidents(User $reporter): void
+    private function seedIncidents(User $official): void
     {
         $incidentTypes = [
             'Crop Damage', 'Livestock Loss', 'Property Damage',
             'Wildlife Sighting', 'Human Injury',
         ];
 
-        $statuses = ['New', 'Assigned', 'In Progress', 'Resolved', 'Escalated'];
+        $statuses = ['New', 'Assigned', 'In Progress', 'Resolved'];
 
         $locationTemplates = [
             'Kanungu' => [
@@ -236,13 +228,21 @@ class DatabaseSeeder extends Seeder
             for ($i = 0; $i < $incidentCount; $i++) {
                 $location = $locations[$i % count($locations)];
 
+                // The first incident per park is deterministically correlated to the matching
+                // Firestore seed doc (android-native-backend-branch/scripts/seed.ts's
+                // seedIncidents(): `seed-{park.firestore_id}-incident-1`) - see
+                // BRIDGE-CONTRACT.md's "Seed fixture ID mapping". This makes cross-system
+                // manual testing possible without depending on the live Cloud Functions bridge
+                // actually running during seeding; the rest stay Laravel-only demo volume.
+                $isBridgeCorrelated = $i === 0 && $park->firestore_id;
+
                 Incident::firstOrCreate(
                     [
                         'park_id' => $park->park_id,
                         'description' => $descriptions[$i % count($descriptions)]." ({$park->park_name})",
                     ],
                     [
-                        'reported_by' => $reporter->user_id,
+                        'reported_by' => $official->user_id,
                         'incident_type' => $incidentTypes[$i % count($incidentTypes)],
                         'latitude' => $baseLat + (($i * 0.01) - 0.02),
                         'longitude' => $baseLng + (($i * 0.01) - 0.02),
@@ -251,7 +251,9 @@ class DatabaseSeeder extends Seeder
                         'sub_county' => $location['sub_county'],
                         'parish' => $location['parish'],
                         'status' => $statuses[$i % count($statuses)],
-                        'source_system' => 'laravel',
+                        'is_escalated' => $i % 5 === 4,
+                        'firestore_doc_id' => $isBridgeCorrelated ? "seed-{$park->firestore_id}-incident-1" : null,
+                        'source_system' => $isBridgeCorrelated ? 'firestore' : 'laravel',
                     ]
                 );
             }

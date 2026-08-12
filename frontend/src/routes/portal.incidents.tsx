@@ -1,10 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { PortalShell, StatusBadge } from "@/components/portal/PortalShell";
+import { PortalShell, StatusBadge, EscalatedBadge } from "@/components/portal/PortalShell";
 import { apiFetch, ApiError } from "@/lib/api";
 import type { Paginated } from "@/lib/api-types";
 import { Download, MapPin, X, UserCheck, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
+
+import { useAuth } from "@/lib/auth";
+import { usePark } from "@/lib/park-context";
 
 export const Route = createFileRoute("/portal/incidents")({ component: Incidents });
 
@@ -12,6 +15,7 @@ interface IncidentRow {
   incident_id: number;
   incident_type: string;
   status: string;
+  is_escalated: boolean;
   village: string | null;
   latitude: string | number;
   longitude: string | number;
@@ -20,7 +24,11 @@ interface IncidentRow {
   park?: { park_id: number; park_name: string } | null;
   reporter?: { user_id: number; first_name: string; last_name: string } | null;
   species?: { common_name: string } | null;
-  assignments?: Array<{ assignment_id: number; assignment_status: string; ranger?: { first_name: string; last_name: string } }>;
+  assignments?: Array<{
+    assignment_id: number;
+    assignment_status: string;
+    ranger?: { first_name: string; last_name: string };
+  }>;
 }
 
 interface Ranger {
@@ -31,19 +39,33 @@ interface Ranger {
 }
 
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
-const STATUSES = ["New", "Assigned", "In Progress", "Resolved", "Escalated"];
+const STATUSES = ["New", "Assigned", "In Progress", "Resolved"];
 
 function Incidents() {
   const [open, setOpen] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
+  const [escalatedOnly, setEscalatedOnly] = useState(false);
   const queryClient = useQueryClient();
+  const { selectedParkId } = usePark();
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["incidents", statusFilter],
-    queryFn: () => apiFetch<Paginated<IncidentRow>>(`/incidents${statusFilter ? `?status=${encodeURIComponent(statusFilter)}` : ""}`),
+    queryKey: ["incidents", statusFilter, escalatedOnly, selectedParkId],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (statusFilter) params.set("status", statusFilter);
+      if (escalatedOnly) params.set("escalated", "1");
+      if (selectedParkId) params.set("park_id", selectedParkId);
+      const qs = params.toString();
+      return apiFetch<Paginated<IncidentRow>>(`/incidents?${qs}`);
+    },
   });
 
   const { data: rangers } = useQuery({
@@ -60,46 +82,120 @@ function Incidents() {
   }
 
   return (
-    <PortalShell title="Incidents" subtitle={data ? `${data.total} reports` : "Loading…"}
+    <PortalShell
+      title="Incidents"
+      subtitle={data ? `${data.total} reports` : "Loading…"}
       helpText="Click any row to open the case drawer. Assign a ranger or update status — all actions are recorded in the audit log."
-      actions={<button className="portal-btn portal-btn-gold"><Download size={13} /> Export CSV</button>}>
+      actions={
+        <button className="portal-btn portal-btn-gold">
+          <Download size={13} /> Export CSV
+        </button>
+      }
+    >
       <div className="portal-card p-3 mb-4">
         <div className="flex flex-wrap gap-2">
-          <select className="portal-input w-44" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <select
+            className="portal-input w-44"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
             <option value="">All statuses</option>
-            {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+            {STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
           </select>
+          <button
+            type="button"
+            onClick={() => setEscalatedOnly((v) => !v)}
+            className={`portal-btn ${escalatedOnly ? "portal-btn-gold" : ""}`}
+          >
+            <AlertTriangle size={13} /> Escalated only
+          </button>
         </div>
       </div>
 
-      {isLoading && <div className="portal-card p-6 text-sm text-[var(--p-ink-soft)]">Loading incidents…</div>}
-      {isError && <div className="portal-card p-6 text-sm text-[var(--p-danger)]">Couldn't load incidents: {error instanceof Error ? error.message : "unknown error"}</div>}
-
-      {data && (
-        <div className="portal-card overflow-hidden">
-          <table className="portal-table">
-            <thead><tr><th>ID</th><th>Type</th><th>Park</th><th>Village</th><th>Reporter</th><th>Assigned to</th><th>Status</th><th>Reported</th></tr></thead>
-            <tbody>
-              {incidents.length === 0 && <tr><td colSpan={8} className="text-center text-[var(--p-ink-soft)] py-4">No incidents found.</td></tr>}
-              {incidents.map((i) => {
-                const assignedRanger = i.assignments?.[0]?.ranger;
-                return (
-                  <tr key={i.incident_id} onClick={() => setOpen(i.incident_id)} className="cursor-pointer">
-                    <td className="font-mono text-[12px] font-semibold text-[var(--p-olive-deep)]">WW-{i.incident_id}</td>
-                    <td>{i.incident_type}</td>
-                    <td>{i.park?.park_name ?? "—"}</td>
-                    <td>{i.village ?? "—"}</td>
-                    <td>{i.reporter ? `${i.reporter.first_name} ${i.reporter.last_name}` : "—"}</td>
-                    <td>{assignedRanger ? `${assignedRanger.first_name} ${assignedRanger.last_name}` : <span className="text-[var(--p-ink-soft)] italic">Unassigned</span>}</td>
-                    <td><StatusBadge status={i.status} /></td>
-                    <td className="text-[var(--p-ink-soft)] text-[12px]">{fmtDate(i.created_at)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      {isLoading && (
+        <div className="portal-card p-6 text-sm text-[var(--p-ink-soft)]">Loading incidents…</div>
+      )}
+      {isError && (
+        <div className="portal-card p-6 text-sm text-[var(--p-danger)]">
+          Couldn't load incidents: {error instanceof Error ? error.message : "unknown error"}
         </div>
       )}
+
+      <div className="portal-card overflow-hidden shadow-sm border-neutral-100 bg-white/50 backdrop-blur-sm">
+        <table className="portal-table border-collapse">
+          <thead>
+            <tr className="bg-neutral-50/50">
+              <th className="py-4 font-black">Callsign</th>
+              <th className="py-4 font-black">Type</th>
+              <th className="py-4 font-black">Region</th>
+              <th className="py-4 font-black">Village</th>
+              <th className="py-4 font-black">Reporter</th>
+              <th className="py-4 font-black">Operator</th>
+              <th className="py-4 font-black text-center">Status</th>
+              <th className="py-4 font-black text-right pr-6">Timestamp</th>
+            </tr>
+          </thead>
+          <tbody>
+            {incidents.length === 0 && (
+              <tr>
+                <td colSpan={8} className="text-center text-neutral-400 py-12 italic">
+                  No field data retrieved for the selected scope.
+                </td>
+              </tr>
+            )}
+            {incidents.map((i) => {
+              const assignedRanger = i.assignments?.[0]?.ranger;
+              return (
+                <tr
+                  key={i.incident_id}
+                  onClick={() => setOpen(i.incident_id)}
+                  className="hover:bg-white transition-colors cursor-pointer group"
+                >
+                  <td className="font-mono text-[11px] font-bold text-neutral-400 py-4">
+                    WW-{i.incident_id}
+                  </td>
+                  <td className="font-bold text-neutral-800">{i.incident_type}</td>
+                  <td className="text-neutral-500 font-medium">{i.park?.park_name ?? "—"}</td>
+                  <td className="text-neutral-500">{i.village ?? "—"}</td>
+                  <td className="text-[13px] font-medium text-neutral-700">
+                    {i.reporter ? `${i.reporter.first_name} ${i.reporter.last_name}` : "—"}
+                  </td>
+                  <td>
+                    {assignedRanger ? (
+                      <div className="flex items-center gap-2">
+                        <div className="h-6 w-6 rounded-full bg-[#1A2F1A] text-white flex items-center justify-center text-[9px] font-bold">
+                          {assignedRanger.first_name[0]}
+                          {assignedRanger.last_name[0]}
+                        </div>
+                        <span className="text-[12px] font-semibold text-neutral-700">
+                          {assignedRanger.first_name}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-[11px] font-bold text-neutral-300 uppercase tracking-wider italic">
+                        Awaiting
+                      </span>
+                    )}
+                  </td>
+                  <td className="text-center">
+                    <div className="flex items-center justify-center gap-1.5">
+                      <StatusBadge status={i.status} />
+                      {i.is_escalated && <EscalatedBadge />}
+                    </div>
+                  </td>
+                  <td className="text-right pr-6 font-bold text-neutral-400 tabular-nums text-[12px]">
+                    {fmtDate(i.created_at)}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
 
       {selected && (
         <IncidentDrawer
@@ -113,8 +209,16 @@ function Incidents() {
   );
 }
 
-function IncidentDrawer({ incident, rangers, onClose, onChanged }: {
-  incident: IncidentRow; rangers: Ranger[]; onClose: () => void; onChanged: () => Promise<void>;
+function IncidentDrawer({
+  incident,
+  rangers,
+  onClose,
+  onChanged,
+}: {
+  incident: IncidentRow;
+  rangers: Ranger[];
+  onClose: () => void;
+  onChanged: () => Promise<void>;
 }) {
   const [rangerId, setRangerId] = useState("");
   const [busy, setBusy] = useState(false);
@@ -123,73 +227,157 @@ function IncidentDrawer({ incident, rangers, onClose, onChanged }: {
 
   async function assign() {
     if (!rangerId) return;
-    setBusy(true); setErr(null);
+    setBusy(true);
+    setErr(null);
     try {
-      await apiFetch(`/incidents/${incident.incident_id}/assign`, { method: "POST", body: JSON.stringify({ ranger_id: Number(rangerId) }) });
+      await apiFetch(`/incidents/${incident.incident_id}/assign`, {
+        method: "POST",
+        body: JSON.stringify({ ranger_id: Number(rangerId) }),
+      });
       await onChanged();
       onClose();
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : "Couldn't assign ranger.");
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function setStatus(status: string) {
-    setBusy(true); setErr(null);
+    setBusy(true);
+    setErr(null);
     try {
-      await apiFetch(`/incidents/${incident.incident_id}/status`, { method: "PATCH", body: JSON.stringify({ status }) });
+      await apiFetch(`/incidents/${incident.incident_id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
       await onChanged();
       onClose();
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : "Couldn't update status.");
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function toggleEscalate() {
+    setBusy(true);
+    setErr(null);
+    try {
+      await apiFetch(`/incidents/${incident.incident_id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ is_escalated: !incident.is_escalated }),
+      });
+      await onChanged();
+      onClose();
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : "Couldn't update escalation.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
     <div className="fixed inset-0 z-50 bg-black/30 flex justify-end" onClick={onClose}>
-      <div className="w-[440px] h-full bg-white shadow-2xl overflow-auto" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="w-[440px] h-full bg-white shadow-2xl overflow-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="p-5 border-b border-[var(--p-olive-line)] flex items-start justify-between">
           <div>
-            <div className="text-[11px] uppercase tracking-wider text-[var(--p-ink-soft)] font-semibold">{incident.incident_type} · WW-{incident.incident_id}</div>
+            <div className="text-[11px] uppercase tracking-wider text-[var(--p-ink-soft)] font-semibold">
+              {incident.incident_type} · WW-{incident.incident_id}
+            </div>
             <h3 className="portal-display text-lg font-bold mt-1">{incident.description}</h3>
-            <div className="flex gap-2 mt-2"><StatusBadge status={incident.status} /></div>
+            <div className="flex gap-2 mt-2">
+              <StatusBadge status={incident.status} />
+              {incident.is_escalated && <EscalatedBadge />}
+            </div>
           </div>
-          <button onClick={onClose} className="text-[var(--p-ink-soft)] hover:text-[var(--p-ink)]"><X size={18} /></button>
+          <button onClick={onClose} className="text-[var(--p-ink-soft)] hover:text-[var(--p-ink)]">
+            <X size={18} />
+          </button>
         </div>
         <div className="p-5 space-y-4 text-[13px]">
           <div className="grid grid-cols-2 gap-3">
             <Info label="Park" value={incident.park?.park_name ?? "—"} />
             <Info label="Village" value={incident.village ?? "—"} />
             <Info label="Species" value={incident.species?.common_name ?? "—"} />
-            <Info label="Reporter" value={incident.reporter ? `${incident.reporter.first_name} ${incident.reporter.last_name}` : "—"} />
+            <Info
+              label="Reporter"
+              value={
+                incident.reporter
+                  ? `${incident.reporter.first_name} ${incident.reporter.last_name}`
+                  : "—"
+              }
+            />
             <Info label="Reported at" value={fmtDate(incident.created_at)} />
-            <Info label="Coordinates" value={`${Number(incident.latitude).toFixed(3)}, ${Number(incident.longitude).toFixed(3)}`} />
+            <Info
+              label="Coordinates"
+              value={`${Number(incident.latitude).toFixed(3)}, ${Number(incident.longitude).toFixed(3)}`}
+            />
           </div>
 
           <div>
-            <div className="text-[11px] uppercase tracking-wider text-[var(--p-ink-soft)] font-semibold mb-1.5">Assignment</div>
+            <div className="text-[11px] uppercase tracking-wider text-[var(--p-ink-soft)] font-semibold mb-1.5">
+              Assignment
+            </div>
             <div className="portal-card p-3">
               <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2"><UserCheck size={16} className="text-[var(--p-olive)]" /><span className="font-semibold">{assignedRanger ? `${assignedRanger.first_name} ${assignedRanger.last_name}` : "No personnel assigned"}</span></div>
+                <div className="flex items-center gap-2">
+                  <UserCheck size={16} className="text-[var(--p-olive)]" />
+                  <span className="font-semibold">
+                    {assignedRanger
+                      ? `${assignedRanger.first_name} ${assignedRanger.last_name}`
+                      : "No personnel assigned"}
+                  </span>
+                </div>
               </div>
               <div className="flex gap-2">
-                <select className="portal-input flex-1" value={rangerId} onChange={(e) => setRangerId(e.target.value)}>
+                <select
+                  className="portal-input flex-1"
+                  value={rangerId}
+                  onChange={(e) => setRangerId(e.target.value)}
+                >
                   <option value="">Select a ranger…</option>
                   {rangers.map((r) => (
-                    <option key={r.user_id} value={r.user_id}>{r.first_name} {r.last_name} ({r.active_assignments_count} active)</option>
+                    <option key={r.user_id} value={r.user_id}>
+                      {r.first_name} {r.last_name} ({r.active_assignments_count} active)
+                    </option>
                   ))}
                 </select>
-                <button className="portal-btn" disabled={!rangerId || busy} onClick={assign}>{assignedRanger ? "Reassign" : "Assign"}</button>
+                <button className="portal-btn" disabled={!rangerId || busy} onClick={assign}>
+                  {assignedRanger ? "Reassign" : "Assign"}
+                </button>
               </div>
             </div>
           </div>
 
-          {err && <div className="text-[12px] text-[var(--p-danger)] bg-[var(--p-danger)]/10 border border-[var(--p-danger)]/30 rounded-md px-3 py-2">{err}</div>}
+          {err && (
+            <div className="text-[12px] text-[var(--p-danger)] bg-[var(--p-danger)]/10 border border-[var(--p-danger)]/30 rounded-md px-3 py-2">
+              {err}
+            </div>
+          )}
 
           <div className="flex gap-2 pt-2">
-            <button className="portal-btn portal-btn-gold flex-1 justify-center" disabled={busy} onClick={() => setStatus("Escalated")}><AlertTriangle size={13} /> Escalate</button>
-            <button className="portal-btn flex-1 justify-center" disabled={busy} onClick={() => setStatus("Resolved")}><CheckCircle2 size={13} /> Mark resolved</button>
+            <button
+              className="portal-btn portal-btn-gold flex-1 justify-center"
+              disabled={busy}
+              onClick={toggleEscalate}
+            >
+              <AlertTriangle size={13} /> {incident.is_escalated ? "Un-escalate" : "Escalate"}
+            </button>
+            <button
+              className="portal-btn flex-1 justify-center"
+              disabled={busy}
+              onClick={() => setStatus("Resolved")}
+            >
+              <CheckCircle2 size={13} /> Mark resolved
+            </button>
           </div>
-          <div className="text-[11px] text-[var(--p-ink-soft)] italic flex items-center gap-1"><MapPin size={11} /> Coordinates shown are as originally reported.</div>
+          <div className="text-[11px] text-[var(--p-ink-soft)] italic flex items-center gap-1">
+            <MapPin size={11} /> Coordinates shown are as originally reported.
+          </div>
         </div>
       </div>
     </div>
@@ -199,7 +387,9 @@ function IncidentDrawer({ incident, rangers, onClose, onChanged }: {
 function Info({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-wider text-[var(--p-ink-soft)] font-semibold">{label}</div>
+      <div className="text-[10px] uppercase tracking-wider text-[var(--p-ink-soft)] font-semibold">
+        {label}
+      </div>
       <div className="mt-0.5 font-medium">{value}</div>
     </div>
   );

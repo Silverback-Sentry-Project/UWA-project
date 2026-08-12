@@ -10,7 +10,7 @@ class Park extends Model
     protected $primaryKey = 'park_id';
     public $timestamps = false;
 
-    protected $fillable = ['park_name', 'district', 'description'];
+    protected $fillable = ['park_name', 'district', 'description', 'firestore_id'];
 
     public function incidents()
     {

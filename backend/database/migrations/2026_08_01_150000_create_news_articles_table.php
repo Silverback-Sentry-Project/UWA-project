@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id('article_id');
             $table->string('firestore_doc_id', 128)->nullable()->unique();
             $table->foreignId('author_id')->constrained('users', 'user_id');
+            $table->foreignId('park_id')->nullable()->constrained('parks', 'park_id');
             $table->string('title', 255);
             $table->text('excerpt');
             $table->longText('body')->nullable();

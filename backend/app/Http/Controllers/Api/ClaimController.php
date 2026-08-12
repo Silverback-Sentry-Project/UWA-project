@@ -32,6 +32,13 @@ class ClaimController extends Controller
 
     public function approve(Request $request, CompensationClaim $claim)
     {
+        // WildWatch-Platform-Plan.md §9.2 W6: previously no guard at all, so a Rejected or
+        // already-Paid claim could be flipped back to Approved. Mirrors the same-file guard
+        // already used in markPaid().
+        if (! in_array($claim->claim_status, ['Submitted', 'Under Review'], true)) {
+            return response()->json(['message' => 'Only claims awaiting review can be approved.'], 422);
+        }
+
         $claim->update([
             'claim_status' => 'Approved',
             'approved_by' => $request->user()->user_id,
@@ -49,6 +56,12 @@ class ClaimController extends Controller
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        // Same reasoning as approve()'s guard above - a Paid claim shouldn't be revertible to
+        // Rejected either.
+        if (! in_array($claim->claim_status, ['Submitted', 'Under Review'], true)) {
+            return response()->json(['message' => 'Only claims awaiting review can be rejected.'], 422);
         }
 
         $claim->update([
@@ -76,7 +89,7 @@ class ClaimController extends Controller
             return response()->json(['message' => 'Only approved claims can be marked as paid.'], 422);
         }
 
-        $payment = Payment::create([
+        Payment::create([
             'claim_id' => $claim->claim_id,
             'amount_paid' => $request->amount_paid,
             'payment_method' => $request->payment_method,

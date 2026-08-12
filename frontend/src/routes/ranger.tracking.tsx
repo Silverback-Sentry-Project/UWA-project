@@ -6,11 +6,46 @@ import { CheckCircle2, Clock, AlertOctagon, Filter } from "lucide-react";
 export const Route = createFileRoute("/ranger/tracking")({ component: Tracking });
 
 const ITEMS = [
-  { id: "INC-2049", title: "Elephant herd · Kichwamba", status: "En route", tone: "warning" as const, time: "Now", priority: "Urgent" },
-  { id: "INC-2046", title: "Snare removal · Wairingo", status: "On site", tone: "info" as const, time: "2h", priority: "High" },
-  { id: "INC-2041", title: "Buffalo · Buliisa", status: "Resolved", tone: "success" as const, time: "Yesterday", priority: "Medium" },
-  { id: "INC-2039", title: "Crop damage · Pakwach", status: "Resolved", tone: "success" as const, time: "2d", priority: "Medium" },
-  { id: "INC-2034", title: "Suspicious activity", status: "Escalated", tone: "danger" as const, time: "3d", priority: "Urgent" },
+  {
+    id: "INC-2049",
+    title: "Elephant herd · Kichwamba",
+    status: "En route",
+    tone: "warning" as const,
+    time: "Now",
+    priority: "Urgent",
+  },
+  {
+    id: "INC-2046",
+    title: "Snare removal · Wairingo",
+    status: "On site",
+    tone: "info" as const,
+    time: "2h",
+    priority: "High",
+  },
+  {
+    id: "INC-2041",
+    title: "Buffalo · Buliisa",
+    status: "Resolved",
+    tone: "success" as const,
+    time: "Yesterday",
+    priority: "Medium",
+  },
+  {
+    id: "INC-2039",
+    title: "Crop damage · Pakwach",
+    status: "Resolved",
+    tone: "success" as const,
+    time: "2d",
+    priority: "Medium",
+  },
+  {
+    id: "INC-2034",
+    title: "Suspicious activity",
+    status: "Escalated",
+    tone: "danger" as const,
+    time: "3d",
+    priority: "Urgent",
+  },
 ];
 
 function Tracking() {
@@ -27,7 +62,12 @@ function Tracking() {
 
           <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1">
             {["All", "Urgent", "In progress", "Resolved", "Escalated"].map((f, i) => (
-              <button key={f} className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap ${i === 0 ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"}`}>{f}</button>
+              <button
+                key={f}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap ${i === 0 ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"}`}
+              >
+                {f}
+              </button>
             ))}
           </div>
 
@@ -42,7 +82,9 @@ function Tracking() {
                 </div>
                 <div className="text-sm font-semibold">{it.title}</div>
                 <div className="mt-2 h-1.5 rounded-full bg-secondary overflow-hidden">
-                  <div className={`h-full ${it.tone === "success" ? "bg-success w-full" : it.tone === "warning" ? "bg-warning w-1/2" : it.tone === "danger" ? "bg-destructive w-3/4" : "bg-info w-2/3"}`} />
+                  <div
+                    className={`h-full ${it.tone === "success" ? "bg-success w-full" : it.tone === "warning" ? "bg-warning w-1/2" : it.tone === "danger" ? "bg-destructive w-3/4" : "bg-info w-2/3"}`}
+                  />
                 </div>
               </div>
             ))}
@@ -54,11 +96,27 @@ function Tracking() {
   );
 }
 
-function KPI({ icon: Icon, value, label, tone }: { icon: any; value: string; label: string; tone: "success" | "warning" | "danger" }) {
-  const c = { success: "bg-success/15 text-success", warning: "bg-warning/25 text-foreground", danger: "bg-destructive/15 text-destructive" }[tone];
+function KPI({
+  icon: Icon,
+  value,
+  label,
+  tone,
+}: {
+  icon: any;
+  value: string;
+  label: string;
+  tone: "success" | "warning" | "danger";
+}) {
+  const c = {
+    success: "bg-success/15 text-success",
+    warning: "bg-warning/25 text-foreground",
+    danger: "bg-destructive/15 text-destructive",
+  }[tone];
   return (
     <div className="bg-card rounded-2xl p-3 shadow-card">
-      <div className={`h-8 w-8 rounded-lg grid place-items-center ${c} mb-1.5`}><Icon size={15} /></div>
+      <div className={`h-8 w-8 rounded-lg grid place-items-center ${c} mb-1.5`}>
+        <Icon size={15} />
+      </div>
       <div className="text-lg font-bold leading-tight">{value}</div>
       <div className="text-[10px] text-muted-foreground">{label}</div>
     </div>

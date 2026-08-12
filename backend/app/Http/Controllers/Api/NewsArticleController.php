@@ -39,6 +39,7 @@ class NewsArticleController extends Controller
             'source' => ['nullable', 'string', 'max:150'],
             'read_time' => ['nullable', 'string', 'max:20'],
             'theme' => ['nullable', 'in:FOREST,WILDLIFE,SECURITY'],
+            'park_id' => ['nullable', 'integer', 'exists:parks,park_id'],
             'published' => ['nullable', 'boolean'],
             'published_at' => ['nullable', 'date'],
         ]);

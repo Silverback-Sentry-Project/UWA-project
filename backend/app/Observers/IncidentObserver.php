@@ -18,13 +18,21 @@ class IncidentObserver
             return;
         }
 
-        if (! $incident->firestore_doc_id || ! $incident->wasChanged(['status'])) {
+        if (! $incident->firestore_doc_id || ! $incident->wasChanged(['status', 'is_escalated'])) {
             return;
         }
 
-        $this->firebase->syncIncidentDocument($incident->firestore_doc_id, [
-            'status' => $this->mapStatusToFirestore($incident->status),
-        ]);
+        $payload = [];
+
+        if ($incident->wasChanged('status')) {
+            $payload['status'] = $this->mapStatusToFirestore($incident->status);
+        }
+
+        if ($incident->wasChanged('is_escalated')) {
+            $payload['isEscalated'] = $incident->is_escalated;
+        }
+
+        $this->firebase->syncIncidentDocument($incident->firestore_doc_id, $payload);
     }
 
     private function mapStatusToFirestore(string $status): string
@@ -33,7 +41,6 @@ class IncidentObserver
             'Assigned' => 'assigned',
             'In Progress' => 'in_progress',
             'Resolved' => 'resolved',
-            'Escalated' => 'escalated',
             default => 'open',
         };
     }

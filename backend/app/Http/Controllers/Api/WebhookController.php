@@ -50,6 +50,72 @@ class WebhookController extends Controller
     }
 
     /**
+     * Mobile-direct counterparts of incidents()/sightings()/sosAlerts(), used on the Spark plan
+     * where no Cloud Function can relay a Firestore write as an HMAC-signed webhook. The mobile app
+     * calls these directly, authenticated by its own Firebase ID token (see VerifyFirebaseIdToken)
+     * instead of a shared HMAC secret. Same {docId, eventType, before/after} payload shape and the
+     * same handleUpsert()/FirestoreSyncMapper mapping logic, so the two entry points stay in sync.
+     */
+    public function mobileIncidents(Request $request): JsonResponse
+    {
+        $this->injectVerifiedIdentity($request, 'userId');
+
+        return $this->handleUpsert(
+            $request,
+            Incident::class,
+            'firestore_doc_id',
+            fn (string $docId, array $payload) => $this->mapper->mapIncidentAttributes($docId, $payload)
+        );
+    }
+
+    public function mobileSightings(Request $request): JsonResponse
+    {
+        $this->injectVerifiedIdentity($request, 'ranger_uid');
+
+        return $this->handleUpsert(
+            $request,
+            WildlifeSighting::class,
+            'firestore_doc_id',
+            fn (string $docId, array $payload) => $this->mapper->mapSightingAttributes($docId, $payload)
+        );
+    }
+
+    public function mobileSosAlerts(Request $request): JsonResponse
+    {
+        $this->injectVerifiedIdentity($request, 'userId');
+
+        return $this->handleUpsert(
+            $request,
+            SosAlert::class,
+            'firestore_doc_id',
+            fn (string $docId, array $payload) => $this->mapper->mapSosAlertAttributes($docId, $payload)
+        );
+    }
+
+    /**
+     * Overwrites the identity key FirestoreSyncMapper::resolveUserId() reads with the Firebase UID
+     * the middleware already verified, so a mobile caller can't claim to be a different user by
+     * setting userId/ranger_uid/reporter_uid/uid in the request body themselves. $key is checked
+     * first in resolveUserId()'s fallback chain, so this wins regardless of whatever other identity
+     * fields the client also sent.
+     */
+    private function injectVerifiedIdentity(Request $request, string $key): void
+    {
+        $uid = $request->attributes->get('firebase_uid');
+        if (! is_string($uid) || $uid === '') {
+            return;
+        }
+
+        foreach (['after', 'before'] as $field) {
+            $payload = $request->input($field);
+            if (is_array($payload)) {
+                $payload[$key] = $uid;
+                $request->merge([$field => $payload]);
+            }
+        }
+    }
+
+    /**
      * @param  class-string  $modelClass
      * @param  callable(string, array<string, mixed>): array<string, mixed>  $mapAttributes
      */

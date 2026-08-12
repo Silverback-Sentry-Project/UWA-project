@@ -1,58 +1,33 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# WildWatch Backend
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Laravel 13 + Sanctum API for the WildWatch admin/warden portal. Serves the React frontend (`../frontend/`) with parks, species, rangers, incidents, SOS alerts, compensation claims, evidence forms, news articles, and the Firebase-to-Laravel bridge webhooks that keep this database and the mobile app's Firestore data reconciled.
 
-## About Laravel
+## What this is for
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+This is the relational side of WildWatch's two-backend architecture: the mobile app (`android-native-master-branch/`) is offline-first against Firebase/Firestore, while this API is the system of record for anything genuinely relational — compensation claims that reference incidents that reference ranger assignments, with payments and an audit trail hanging off claims. A Cloud Function bridges mobile-originated writes (incidents, sightings, SOS alerts) into this database via signed webhooks; this API's own model observers push portal-originated changes (status updates, claim decisions) back out to Firestore so the mobile app's real-time listeners see them. The full field-level mapping, including which system is authoritative for which entity, is in `../BRIDGE-CONTRACT.md`.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Who can do what in the portal is governed by a role model with several distinct roles (System Administrator, UWA Official, Park Warden, Gamepark Officer, Ranger, Community Wildlife Officer, and public/community accounts), expressed as a handful of route-level middleware aliases rather than one blanket admin gate. `../REPOS.md`'s `web-portal/` section has the current auth-mapping write-up — which middleware alias gates which route group, and how it maps onto the underlying role names.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Requirements
 
-## Learning Laravel
+PHP 8.3 or newer with the extensions Laravel 13 expects (mbstring, openssl, pdo, tokenizer, xml, ctype, json, bcmath), Composer 2, and a database — SQLite is the simplest option for local development and is what the automated test suite uses; MySQL and Postgres are both supported by the underlying schema, with Postgres being the target for hosted deployment (see below).
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Running against hosted services (Neon, Render, a real Firebase project)
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+This is now the intended default rather than the local Docker stack. Provision a Neon Postgres database and point this application's database configuration at it; the schema migrations use Laravel's database-agnostic schema builder, so they should apply cleanly to Postgres, though this should be verified with an actual migration run against Neon rather than assumed, since every migration so far has only been exercised against MySQL and SQLite. Deploy this application itself to Render's web-service tier, keeping in mind that Render's free tier spins down after roughly fifteen minutes of inactivity, so the first request after a quiet period will be slow to respond — a known, accepted limitation of the free tier, not something to work around. Generate a fresh application key for the hosted environment rather than reusing a local one, set the database connection details to the Neon instance, and set `FIREBASE_BRIDGE_SECRET` to a real rotated secret that matches whatever is configured on the real Firebase project's Cloud Functions side exactly. The full cutover procedure, including the specific environment variables involved and the open questions that still need a decision (a production mail provider chief among them), is documented in `../HOSTED-CUTOVER-PLAN.md`.
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+## Running locally
 
-## Agentic Development
+Copy `.env.example` to `.env`, generate an application key with the Artisan `key:generate` command, configure the database connection (SQLite needs no further configuration beyond the default `database/database.sqlite` path), and run the Artisan `migrate --seed` command followed by `artisan serve`. The API is then available at `http://localhost:8000/api`. Authenticate with a `POST` to `/api/login` and use the returned Sanctum token as a bearer token on subsequent requests. A seeded System Administrator login is documented in `../BRIDGE-CONTRACT.md`'s seed fixture mapping section — change that password after first login in any environment that isn't purely local and disposable.
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+The full local Docker stack that used to wire Firebase emulators, MySQL, Redis, Mailpit, this API, and the portal frontend together has been retired; the two options are running this API standalone as described above, or the hosted-services path.
 
-```bash
-composer require laravel/boost --dev
+## Testing and code style
 
-php artisan boost:install
-```
+The feature test suite runs against an in-memory SQLite database and does not require any external service to be running. Pint enforces code style; static analysis beyond that is not currently wired into this project.
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+## The bridge webhooks
 
-## Contributing
+Webhook routes under `/api/webhooks/` are authenticated by an HMAC signature header rather than Sanctum — `FIREBASE_BRIDGE_SECRET` must match the value configured on the Firebase Functions side exactly, in every environment. See `../BRIDGE-CONTRACT.md` for the full contract: which fields map to which, which system is authoritative for what, and how echo prevention keeps a webhook-originated write from bouncing back out as a second webhook call.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+A Postman collection covering this API's full route surface, including example request bodies and a self-signing setup for the webhook routes, is at `wildwatch.json` in this directory's root.

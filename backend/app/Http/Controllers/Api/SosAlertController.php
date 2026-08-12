@@ -16,6 +16,9 @@ class SosAlertController extends Controller
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
+        if ($request->filled('park_id')) {
+            $query->where('park_id', $request->park_id);
+        }
 
         return response()->json(
             $query->latest('created_at')->paginate($request->integer('per_page', 25))
