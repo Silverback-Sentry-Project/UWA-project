@@ -79,6 +79,26 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
+      // Partial mitigation for the auth-token-in-localStorage exposure
+      // (WildWatch-Platform-Plan.md §9.2 W2). A stricter script-src 'self' (no unsafe-inline)
+      // was tried first and rejected: TanStack Start's own SSR hydration/scroll-restoration
+      // injects inline <script> tags (confirmed by fetching the rendered HTML directly), so it
+      // would break the app. Doing this properly needs TanStack Start's per-request nonce
+      // (there's a `nonce` field in its server request-handler types) threaded through
+      // <Scripts nonce={...}> and a real response header - real framework-integration work,
+      // deferred as comparable effort/risk to the httpOnly-cookie-auth rearchitecture that was
+      // also deferred. What this DOES still block: loading a remote script via
+      // <script src="https://attacker.example/steal.js">, e.g. from a compromised npm
+      // dependency - it just no longer blocks an inline-script XSS payload from running.
+      // connect-src stays permissive (any https origin) rather than hardcoded to one API host,
+      // since VITE_API_URL=auto lets this same build point at different API origins per
+      // environment (LAN dev, staging, prod) - tighten this to the real API origin once the
+      // hosted-services cutover (Prompt 11) picks one.
+      {
+        httpEquiv: "Content-Security-Policy",
+        content:
+          "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.tile.openstreetmap.org; connect-src 'self' https:; object-src 'none'; base-uri 'self'; frame-ancestors 'none';",
+      },
       {
         name: "description",
         content: "Administrative portal for wildlife protection and incident management.",

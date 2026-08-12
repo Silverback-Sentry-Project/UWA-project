@@ -30,7 +30,7 @@ class DashboardController extends Controller
                 'assigned' => $incidentBase()->where('status', 'Assigned')->count(),
                 'in_progress' => $incidentBase()->where('status', 'In Progress')->count(),
                 'resolved' => $incidentBase()->where('status', 'Resolved')->count(),
-                'escalated' => $incidentBase()->where('status', 'Escalated')->count(),
+                'escalated' => $incidentBase()->where('is_escalated', true)->count(),
             ],
             'sos_alerts' => [
                 'total' => $sosBase()->count(),

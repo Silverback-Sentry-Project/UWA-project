@@ -70,6 +70,32 @@ class AuthApiTest extends TestCase
         $response->assertStatus(403);
     }
 
+    public function test_login_is_rate_limited_after_repeated_failures()
+    {
+        User::create([
+            'first_name' => 'Admin',
+            'last_name' => 'User',
+            'email' => 'admin@example.com',
+            'password_hash' => Hash::make('password123'),
+            'account_status' => 'Active',
+        ]);
+
+        for ($i = 0; $i < 6; $i++) {
+            $this->postJson('/api/login', [
+                'email' => 'admin@example.com',
+                'password' => 'wrong-password',
+            ])->assertStatus(401);
+        }
+
+        // 7th attempt within the same minute should be throttled, not re-checked against
+        // credentials at all - regression test for WildWatch-Platform-Plan.md §9.2 W1
+        // (previously unthrottled, brute-forceable).
+        $this->postJson('/api/login', [
+            'email' => 'admin@example.com',
+            'password' => 'wrong-password',
+        ])->assertStatus(429);
+    }
+
     public function test_authenticated_user_can_get_me_details()
     {
         $role = Role::create(['role_name' => 'System Administrator']);

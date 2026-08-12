@@ -2,11 +2,16 @@
 
 use App\Http\Controllers\Api\AuditController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ClaimController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\EvidenceFormController;
+use App\Http\Controllers\Api\EvidenceFormSubmissionController;
+use App\Http\Controllers\Api\ForwardedFormController;
 use App\Http\Controllers\Api\IncidentController;
 use App\Http\Controllers\Api\NewsArticleController;
 use App\Http\Controllers\Api\ParkController;
 use App\Http\Controllers\Api\RangerController;
+use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\SosAlertController;
 use App\Http\Controllers\Api\SpeciesController;
 use App\Http\Controllers\Api\UserController;
@@ -14,7 +19,10 @@ use App\Http\Controllers\Api\WebhookController;
 use Illuminate\Support\Facades\Route;
 
 // Public
-Route::post('/login', [AuthController::class, 'login']);
+// throttle:6,1 - 6 attempts/minute per IP+email (Laravel's own standard scaffolding default).
+// Previously unthrottled (WildWatch-Platform-Plan.md §9.2 W1) - the single entry point to the
+// entire portal was brute-forceable with no backoff.
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:6,1');
 Route::get('/public/parks', [ParkController::class, 'publicIndex']);
 
 // Firebase → Laravel bridge (HMAC-protected, outside Sanctum)
@@ -36,6 +44,7 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/rangers', [RangerController::class, 'index']);
     Route::post('/rangers', [RangerController::class, 'store']);
     Route::get('/audit', [AuditController::class, 'index']);
+    Route::get('/roles', [RoleController::class, 'index']);
 
     Route::get('/incidents', [IncidentController::class, 'index']);
     Route::post('/incidents', [IncidentController::class, 'store']);
@@ -50,6 +59,7 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
 
     Route::get('/users', [UserController::class, 'index']);
     Route::post('/users', [UserController::class, 'store']);
+    Route::post('/users/invite', [UserController::class, 'invite']);
     Route::get('/users/{user}', [UserController::class, 'show']);
     Route::patch('/users/{user}', [UserController::class, 'update']);
 });
@@ -59,4 +69,41 @@ Route::middleware(['auth:sanctum', 'warden_or_uwa'])->group(function () {
     Route::get('/news-articles', [NewsArticleController::class, 'index']);
     Route::post('/news-articles', [NewsArticleController::class, 'store']);
     Route::get('/news-articles/{newsArticle}', [NewsArticleController::class, 'show']);
+});
+
+// Compensation claims and cross-park forwarded-form review — cross-park,
+// HQ-level data with no per-park scoping, so restricted to System
+// Administrator and UWA Official (narrower than the 'admin' alias, which
+// also admits Park Warden and Gamepark Officer).
+Route::middleware(['auth:sanctum', 'admin_or_uwa'])->group(function () {
+    Route::get('/claims', [ClaimController::class, 'index']);
+    Route::get('/claims/{claim}', [ClaimController::class, 'show']);
+    Route::post('/claims/{claim}/approve', [ClaimController::class, 'approve']);
+    Route::post('/claims/{claim}/reject', [ClaimController::class, 'reject']);
+    Route::post('/claims/{claim}/mark-paid', [ClaimController::class, 'markPaid']);
+
+    Route::get('/forwarded-forms', [ForwardedFormController::class, 'index']);
+    Route::get('/forwarded-forms/{submission}', [ForwardedFormController::class, 'show']);
+});
+
+// Gamepark-portal-only routes — actions unique to running a single park's
+// operations: dispatching against emergencies, evidence forms, and inviting
+// the park's own field staff. Every query here is scoped to the signed-in
+// account's own park_id inside the controller.
+Route::middleware(['auth:sanctum', 'gamepark'])->group(function () {
+    Route::post('/gamepark/incidents/{incident}/assign', [IncidentController::class, 'assign']);
+
+    Route::get('/gamepark/forms', [EvidenceFormController::class, 'index']);
+    Route::post('/gamepark/forms', [EvidenceFormController::class, 'store']);
+    Route::get('/gamepark/forms/{form}', [EvidenceFormController::class, 'show']);
+    Route::patch('/gamepark/forms/{form}', [EvidenceFormController::class, 'update']);
+    Route::delete('/gamepark/forms/{form}', [EvidenceFormController::class, 'destroy']);
+
+    Route::get('/gamepark/submissions', [EvidenceFormSubmissionController::class, 'index']);
+    Route::get('/gamepark/submissions/{submission}', [EvidenceFormSubmissionController::class, 'show']);
+    Route::post('/gamepark/submissions/{submission}/verify', [EvidenceFormSubmissionController::class, 'verify']);
+    Route::post('/gamepark/submissions/{submission}/forward', [EvidenceFormSubmissionController::class, 'forward']);
+
+    Route::get('/gamepark/personnel', [UserController::class, 'gameparkIndex']);
+    Route::post('/gamepark/personnel/invite', [UserController::class, 'gameparkInvite']);
 });

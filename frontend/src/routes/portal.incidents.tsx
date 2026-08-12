@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { PortalShell, StatusBadge } from "@/components/portal/PortalShell";
+import { PortalShell, StatusBadge, EscalatedBadge } from "@/components/portal/PortalShell";
 import { apiFetch, ApiError } from "@/lib/api";
 import type { Paginated } from "@/lib/api-types";
 import { Download, MapPin, X, UserCheck, AlertTriangle, CheckCircle2 } from "lucide-react";
@@ -15,6 +15,7 @@ interface IncidentRow {
   incident_id: number;
   incident_type: string;
   status: string;
+  is_escalated: boolean;
   village: string | null;
   latitude: string | number;
   longitude: string | number;
@@ -46,19 +47,21 @@ function fmtDate(iso: string) {
   });
 }
 
-const STATUSES = ["New", "Assigned", "In Progress", "Resolved", "Escalated"];
+const STATUSES = ["New", "Assigned", "In Progress", "Resolved"];
 
 function Incidents() {
   const [open, setOpen] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
+  const [escalatedOnly, setEscalatedOnly] = useState(false);
   const queryClient = useQueryClient();
   const { selectedParkId } = usePark();
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["incidents", statusFilter, selectedParkId],
+    queryKey: ["incidents", statusFilter, escalatedOnly, selectedParkId],
     queryFn: () => {
       const params = new URLSearchParams();
       if (statusFilter) params.set("status", statusFilter);
+      if (escalatedOnly) params.set("escalated", "1");
       if (selectedParkId) params.set("park_id", selectedParkId);
       const qs = params.toString();
       return apiFetch<Paginated<IncidentRow>>(`/incidents?${qs}`);
@@ -103,6 +106,13 @@ function Incidents() {
               </option>
             ))}
           </select>
+          <button
+            type="button"
+            onClick={() => setEscalatedOnly((v) => !v)}
+            className={`portal-btn ${escalatedOnly ? "portal-btn-gold" : ""}`}
+          >
+            <AlertTriangle size={13} /> Escalated only
+          </button>
         </div>
       </div>
 
@@ -172,7 +182,10 @@ function Incidents() {
                     )}
                   </td>
                   <td className="text-center">
-                    <StatusBadge status={i.status} />
+                    <div className="flex items-center justify-center gap-1.5">
+                      <StatusBadge status={i.status} />
+                      {i.is_escalated && <EscalatedBadge />}
+                    </div>
                   </td>
                   <td className="text-right pr-6 font-bold text-neutral-400 tabular-nums text-[12px]">
                     {fmtDate(i.created_at)}
@@ -247,6 +260,23 @@ function IncidentDrawer({
     }
   }
 
+  async function toggleEscalate() {
+    setBusy(true);
+    setErr(null);
+    try {
+      await apiFetch(`/incidents/${incident.incident_id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ is_escalated: !incident.is_escalated }),
+      });
+      await onChanged();
+      onClose();
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : "Couldn't update escalation.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 bg-black/30 flex justify-end" onClick={onClose}>
       <div
@@ -261,6 +291,7 @@ function IncidentDrawer({
             <h3 className="portal-display text-lg font-bold mt-1">{incident.description}</h3>
             <div className="flex gap-2 mt-2">
               <StatusBadge status={incident.status} />
+              {incident.is_escalated && <EscalatedBadge />}
             </div>
           </div>
           <button onClick={onClose} className="text-[var(--p-ink-soft)] hover:text-[var(--p-ink)]">
@@ -332,9 +363,9 @@ function IncidentDrawer({
             <button
               className="portal-btn portal-btn-gold flex-1 justify-center"
               disabled={busy}
-              onClick={() => setStatus("Escalated")}
+              onClick={toggleEscalate}
             >
-              <AlertTriangle size={13} /> Escalate
+              <AlertTriangle size={13} /> {incident.is_escalated ? "Un-escalate" : "Escalate"}
             </button>
             <button
               className="portal-btn flex-1 justify-center"

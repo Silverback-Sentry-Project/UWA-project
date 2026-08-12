@@ -21,6 +21,9 @@ class IncidentController extends Controller
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
+        if ($request->boolean('escalated')) {
+            $query->where('is_escalated', true);
+        }
         if ($request->filled('incident_type')) {
             $query->where('incident_type', $request->incident_type);
         }
@@ -70,7 +73,8 @@ class IncidentController extends Controller
     public function updateStatus(Request $request, Incident $incident)
     {
         $validator = Validator::make($request->all(), [
-            'status' => ['required', 'in:New,Assigned,In Progress,Resolved,Escalated'],
+            'status' => ['sometimes', 'required', 'in:New,Assigned,In Progress,Resolved'],
+            'is_escalated' => ['sometimes', 'boolean'],
             'remarks' => ['nullable', 'string'],
         ]);
 
@@ -78,22 +82,33 @@ class IncidentController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $oldStatus = $incident->status;
-        $incident->update(['status' => $request->status]);
+        if (! $request->has('status') && ! $request->has('is_escalated')) {
+            return response()->json(['errors' => ['status' => ['Either status or is_escalated is required.']]], 422);
+        }
 
-        IncidentStatusHistory::create([
-            'incident_id' => $incident->incident_id,
-            'updated_by' => $request->user()->user_id,
-            'old_status' => $oldStatus,
-            'new_status' => $request->status,
-            'remarks' => $request->remarks,
-        ]);
+        $oldStatus = $incident->status;
+
+        $incident->update($request->only(['status', 'is_escalated']));
+
+        if ($request->has('status') && $request->status !== $oldStatus) {
+            IncidentStatusHistory::create([
+                'incident_id' => $incident->incident_id,
+                'updated_by' => $request->user()->user_id,
+                'old_status' => $oldStatus,
+                'new_status' => $request->status,
+                'remarks' => $request->remarks,
+            ]);
+        }
 
         return response()->json($incident->fresh(['statusHistory']));
     }
 
     public function assign(Request $request, Incident $incident)
     {
+        if ($request->user()?->isGamepark() && $incident->park_id !== $request->user()->park_id) {
+            return response()->json(['message' => 'This incident belongs to a different park.'], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'ranger_id' => ['required', 'exists:users,user_id'],
         ]);
@@ -116,8 +131,9 @@ class IncidentController extends Controller
         return response()->json($assignment->load('ranger'), 201);
     }
 
-    public function destroy(Incident $incident)
+    public function destroy(Request $request, Incident $incident)
     {
+        $incident->update(['deleted_by' => $request->user()->user_id]);
         $incident->delete();
 
         return response()->json(null, 204);

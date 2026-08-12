@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Incident extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'incidents';
     protected $primaryKey = 'incident_id';
     public $timestamps = false;
@@ -13,11 +16,12 @@ class Incident extends Model
     protected $fillable = [
         'reported_by', 'park_id', 'incident_type', 'description',
         'latitude', 'longitude', 'village', 'district', 'sub_county', 'parish',
-        'status', 'firestore_doc_id', 'source_system',
+        'status', 'is_escalated', 'firestore_doc_id', 'source_system', 'deleted_by',
     ];
 
     protected $casts = [
         'created_at' => 'datetime',
+        'is_escalated' => 'boolean',
     ];
 
     public function reporter()
@@ -55,5 +59,10 @@ class Incident extends Model
     public function rangerReport()
     {
         return $this->hasOne(RangerReport::class, 'incident_id', 'incident_id');
+    }
+
+    public function deletedBy()
+    {
+        return $this->belongsTo(User::class, 'deleted_by', 'user_id');
     }
 }

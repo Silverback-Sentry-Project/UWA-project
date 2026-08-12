@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { PortalShell, StatCard, StatusBadge } from "@/components/portal/PortalShell";
+import { PortalShell, StatCard, StatusBadge, EscalatedBadge } from "@/components/portal/PortalShell";
 import { CheckCircle2, Clock4, Flame, Download, RefreshCw, ChevronRight, Zap } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -24,6 +24,7 @@ interface DashboardStats {
     incident_id: string | number;
     incident_type: string;
     status: string;
+    is_escalated: boolean;
     created_at: string;
     park?: { park_name: string } | null;
   }>;
@@ -170,7 +171,10 @@ function Dashboard() {
                         <td className="font-bold text-neutral-800">{i.incident_type}</td>
                         <td className="text-neutral-500 font-medium">{i.park?.park_name ?? "—"}</td>
                         <td className="text-center">
-                          <StatusBadge status={i.status} />
+                          <div className="flex items-center justify-center gap-1.5">
+                            <StatusBadge status={i.status} />
+                            {i.is_escalated && <EscalatedBadge />}
+                          </div>
                         </td>
                         <td className="text-right pr-6 font-bold text-neutral-400 tabular-nums">
                           {fmtDate(i.created_at)}

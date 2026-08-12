@@ -19,28 +19,45 @@ class DatabaseSeeder extends Seeder
             'Ranger' => 'Responds to incidents',
             'UWA Official' => 'Approves claims and monitors analytics',
             'System Administrator' => 'Manages the system',
+            // Referenced by EnsureWardenOrUwaOfficial/EnsureAdmin/UserController's
+            // GAMEPARK_INVITABLE_ROLES but never previously seeded - without these rows,
+            // Role::where('role_name', ...) lookups return null and role attachment
+            // silently no-ops (see BridgeFixturesSeeder's warden fixture, which needs
+            // 'Park Warden' to exist for its role attachment to actually do anything).
+            'Park Warden' => 'Manages a single park\'s gamepark portal',
+            'Gamepark Officer' => 'Park-scoped portal staff account',
+            'Community Wildlife Officer' => 'Community-facing park field staff',
         ];
 
         foreach ($roles as $name => $description) {
             Role::firstOrCreate(['role_name' => $name], ['description' => $description]);
         }
 
+        // firestore_id values must match android-native-backend-branch/scripts/fixtures/
+        // shared-seed-fixtures.json's parks[].firestore_id exactly - this is what lets a
+        // Firestore park doc and this MySQL row be recognized as "the same" record (see
+        // BRIDGE-CONTRACT.md's "Seed fixture ID mapping" section).
         $parks = [
-            ['park_name' => 'Bwindi Impenetrable National Park', 'district' => 'Kanungu', 'description' => 'Mountain gorilla habitat'],
-            ['park_name' => 'Mgahinga Gorilla National Park', 'district' => 'Kisoro', 'description' => 'Gorilla and golden monkey habitat'],
-            ['park_name' => 'Queen Elizabeth National Park', 'district' => 'Kasese', 'description' => 'Savannah wildlife park'],
-            ['park_name' => 'Murchison Falls National Park', 'district' => 'Masindi', 'description' => 'Largest national park in Uganda'],
-            ['park_name' => 'Kibale National Park', 'district' => 'Kabarole', 'description' => 'Primate capital of the world'],
-            ['park_name' => 'Semuliki National Park', 'district' => 'Bundibugyo', 'description' => 'Lowland tropical rainforest'],
-            ['park_name' => 'Rwenzori Mountains National Park', 'district' => 'Kasese', 'description' => 'Glacial mountain range'],
-            ['park_name' => 'Lake Mburo National Park', 'district' => 'Kiruhura', 'description' => 'Savannah and lake wildlife park'],
-            ['park_name' => 'Kidepo Valley National Park', 'district' => 'Kaabong', 'description' => 'Remote semi-arid savannah park'],
-            ['park_name' => 'Mount Elgon National Park', 'district' => 'Mbale', 'description' => 'Extinct volcano and caves'],
+            ['park_name' => 'Bwindi Impenetrable National Park', 'district' => 'Kanungu', 'description' => 'Mountain gorilla habitat', 'firestore_id' => 'bwindi-impenetrable'],
+            ['park_name' => 'Mgahinga Gorilla National Park', 'district' => 'Kisoro', 'description' => 'Gorilla and golden monkey habitat', 'firestore_id' => 'mgahinga-gorilla'],
+            ['park_name' => 'Queen Elizabeth National Park', 'district' => 'Kasese', 'description' => 'Savannah wildlife park', 'firestore_id' => 'queen-elizabeth'],
+            ['park_name' => 'Murchison Falls National Park', 'district' => 'Masindi', 'description' => 'Largest national park in Uganda', 'firestore_id' => 'murchison-falls'],
+            ['park_name' => 'Kibale National Park', 'district' => 'Kabarole', 'description' => 'Primate capital of the world', 'firestore_id' => 'kibale'],
+            ['park_name' => 'Semuliki National Park', 'district' => 'Bundibugyo', 'description' => 'Lowland tropical rainforest', 'firestore_id' => 'semuliki'],
+            ['park_name' => 'Rwenzori Mountains National Park', 'district' => 'Kasese', 'description' => 'Glacial mountain range', 'firestore_id' => 'rwenzori-mountains'],
+            ['park_name' => 'Lake Mburo National Park', 'district' => 'Kiruhura', 'description' => 'Savannah and lake wildlife park', 'firestore_id' => 'lake-mburo'],
+            ['park_name' => 'Kidepo Valley National Park', 'district' => 'Kaabong', 'description' => 'Remote semi-arid savannah park', 'firestore_id' => 'kidepo-valley'],
+            ['park_name' => 'Mount Elgon National Park', 'district' => 'Mbale', 'description' => 'Extinct volcano and caves', 'firestore_id' => 'mount-elgon'],
         ];
 
         foreach ($parks as $park) {
-            Park::firstOrCreate(['park_name' => $park['park_name']], $park);
+            Park::updateOrCreate(['park_name' => $park['park_name']], $park);
         }
+
+        // Bridge-test accounts (ranger@wildwatch.app etc.) linked to their Firebase UID and
+        // resolved park - see BridgeFixturesSeeder and BRIDGE-CONTRACT.md's "Seed fixture ID
+        // mapping". Needs the roles and parks above to already exist.
+        $this->call(BridgeFixturesSeeder::class);
 
         $species = [
             ['common_name' => 'Elephant', 'scientific_name' => 'Loxodonta africana', 'conservation_status' => 'Vulnerable'],
@@ -123,7 +140,7 @@ class DatabaseSeeder extends Seeder
             'Wildlife Sighting', 'Human Injury',
         ];
 
-        $statuses = ['New', 'Assigned', 'In Progress', 'Resolved', 'Escalated'];
+        $statuses = ['New', 'Assigned', 'In Progress', 'Resolved'];
 
         $locationTemplates = [
             'Kanungu' => [
@@ -211,6 +228,14 @@ class DatabaseSeeder extends Seeder
             for ($i = 0; $i < $incidentCount; $i++) {
                 $location = $locations[$i % count($locations)];
 
+                // The first incident per park is deterministically correlated to the matching
+                // Firestore seed doc (android-native-backend-branch/scripts/seed.ts's
+                // seedIncidents(): `seed-{park.firestore_id}-incident-1`) - see
+                // BRIDGE-CONTRACT.md's "Seed fixture ID mapping". This makes cross-system
+                // manual testing possible without depending on the live Cloud Functions bridge
+                // actually running during seeding; the rest stay Laravel-only demo volume.
+                $isBridgeCorrelated = $i === 0 && $park->firestore_id;
+
                 Incident::firstOrCreate(
                     [
                         'park_id' => $park->park_id,
@@ -226,7 +251,9 @@ class DatabaseSeeder extends Seeder
                         'sub_county' => $location['sub_county'],
                         'parish' => $location['parish'],
                         'status' => $statuses[$i % count($statuses)],
-                        'source_system' => 'laravel',
+                        'is_escalated' => $i % 5 === 4,
+                        'firestore_doc_id' => $isBridgeCorrelated ? "seed-{$park->firestore_id}-incident-1" : null,
+                        'source_system' => $isBridgeCorrelated ? 'firestore' : 'laravel',
                     ]
                 );
             }

@@ -413,7 +413,6 @@ export function StatusBadge({ status }: { status: string }) {
     Assigned: { bg: "oklch(0.96 0.03 85)", fg: "oklch(0.45 0.13 85)", icon: UserCheck },
     "In Progress": { bg: "oklch(0.96 0.03 85)", fg: "oklch(0.45 0.13 85)", icon: Zap },
     Resolved: { bg: "oklch(0.95 0.04 150)", fg: "oklch(0.4 0.1 150)", icon: CheckCircle2 },
-    Escalated: { bg: "oklch(0.94 0.05 27)", fg: "oklch(0.5 0.18 27)", icon: AlertTriangle },
     Pending: { bg: "oklch(0.95 0.03 90)", fg: "oklch(0.5 0.1 90)", icon: Clock },
     Responding: { bg: "oklch(0.96 0.03 85)", fg: "oklch(0.45 0.13 85)", icon: Zap },
     Available: { bg: "oklch(0.95 0.04 150)", fg: "oklch(0.4 0.1 150)", icon: CheckCircle2 },
@@ -432,6 +431,20 @@ export function StatusBadge({ status }: { status: string }) {
     >
       <c.icon size={11} />
       {status}
+    </span>
+  );
+}
+
+// Escalation is an orthogonal flag, not a status value, so it renders as its
+// own badge alongside StatusBadge rather than as one of its color variants.
+export function EscalatedBadge() {
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-lg capitalize border border-black/5 shadow-sm transition-all"
+      style={{ background: "oklch(0.94 0.05 27)", color: "oklch(0.5 0.18 27)" }}
+    >
+      <AlertTriangle size={11} />
+      Escalated
     </span>
   );
 }

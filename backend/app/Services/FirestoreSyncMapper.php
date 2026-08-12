@@ -39,6 +39,7 @@ class FirestoreSyncMapper
                 $data['parish'] ?? null,
             ]),
             'status' => $this->mapIncidentStatus($data['status'] ?? null),
+            'is_escalated' => (bool) ($data['isEscalated'] ?? false),
         ];
     }
 
@@ -173,9 +174,11 @@ class FirestoreSyncMapper
     {
         return match (Str::lower((string) ($status ?? 'open'))) {
             'assigned' => 'Assigned',
-            'in_progress', 'in progress' => 'In Progress',
+            // Legacy documents may still carry the old folded-in 'escalated'
+            // status; is_escalated (see mapIncidentAttributes) is the source of
+            // truth for the flag now, so this just keeps the status column sane.
+            'in_progress', 'in progress', 'escalated' => 'In Progress',
             'resolved' => 'Resolved',
-            'escalated' => 'Escalated',
             default => 'New',
         };
     }

@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Middleware\EnsureAdmin;
+use App\Http\Middleware\EnsureAdminOrUwaOfficial;
+use App\Http\Middleware\EnsureGamepark;
 use App\Http\Middleware\EnsureWardenOrUwaOfficial;
 use App\Http\Middleware\VerifyWebhookSignature;
 use Illuminate\Foundation\Application;
@@ -19,6 +21,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => EnsureAdmin::class,
             'webhook.signature' => VerifyWebhookSignature::class,
             'warden_or_uwa' => EnsureWardenOrUwaOfficial::class,
+            'gamepark' => EnsureGamepark::class,
+            'admin_or_uwa' => EnsureAdminOrUwaOfficial::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

@@ -1,0 +1,676 @@
+{
+  "info": {
+    "name": "WildWatch Portal API",
+    "description": "Covers the full web-portal/backend API surface (routes/api.php): admin-portal auth, incidents, SOS alerts, users/rangers, news articles, compensation claims, forwarded forms, the Gamepark portal, and the Firebase→Laravel webhook bridge. See BRIDGE-CONTRACT.md for the bridge's field-mapping contract and REPOS.md/AGENTS.md for the wider project map.\n\nSetup:\n1. Run the 'Login' request first (Auth folder) - its test script saves the returned token into the `bearer_token` collection variable automatically, so every other authenticated request just works afterward.\n2. Webhook requests sign themselves automatically from the `webhook_secret` collection variable (see the Webhooks folder's pre-request script) - set it to match `FIREBASE_BRIDGE_SECRET` in your backend/.env.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000/api", "type": "string" },
+    { "key": "bearer_token", "value": "", "type": "string" },
+    { "key": "webhook_secret", "value": "", "type": "string" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{bearer_token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@wildwatch.app\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/login", "host": ["{{base_url}}"], "path": ["login"] },
+            "description": "Only System Administrator / UWA Official accounts can sign into the admin portal (see AuthController::login); Gamepark accounts authenticate the same way but are scoped by role middleware on individual routes."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.token) {",
+                  "        pm.collectionVariables.set('bearer_token', body.token);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/me", "host": ["{{base_url}}"], "path": ["me"] }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/logout", "host": ["{{base_url}}"], "path": ["logout"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Public",
+      "item": [
+        {
+          "name": "List Public Parks",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/public/parks", "host": ["{{base_url}}"], "path": ["public", "parks"] },
+            "description": "Unauthenticated - populates the park picker on the sign-in screen before login. Returns only park_id/park_name."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Webhooks (Firebase → Laravel bridge)",
+      "description": "HMAC-signed, outside Sanctum entirely (see BRIDGE-CONTRACT.md and VerifyWebhookSignature middleware). The pre-request script below computes X-WildWatch-Signature from the raw request body and the `webhook_secret` collection variable, exactly like functions/src/bridge.ts's signPayload() does on the Cloud Functions side - set `webhook_secret` to match your backend/.env's FIREBASE_BRIDGE_SECRET before using these.",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const secret = pm.collectionVariables.get('webhook_secret');",
+              "const body = pm.request.body && pm.request.body.raw ? pm.request.body.raw : '';",
+              "if (secret && body) {",
+              "    const digest = CryptoJS.HmacSHA256(body, secret).toString();",
+              "    pm.request.headers.upsert({ key: 'X-WildWatch-Signature', value: `sha256=${digest}` });",
+              "}"
+            ]
+          }
+        }
+      ],
+      "item": [
+        {
+          "name": "Incident Webhook (create/update/delete)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"docId\": \"firestore-inc-001\",\n  \"eventType\": \"create\",\n  \"after\": {\n    \"type\": \"conflict\",\n    \"status\": \"open\",\n    \"park\": \"Bwindi Impenetrable National Park\",\n    \"summary\": \"Crop damage near village\",\n    \"lat\": -1.05,\n    \"lng\": 29.7,\n    \"community\": \"Buhoma\",\n    \"district\": \"Kanungu\",\n    \"severity\": \"medium\",\n    \"isEscalated\": false,\n    \"reportedAt\": \"2026-08-12T09:00:00Z\"\n  }\n}"
+            },
+            "url": { "raw": "{{base_url}}/webhooks/incidents", "host": ["{{base_url}}"], "path": ["webhooks", "incidents"] },
+            "description": "eventType is one of create/update/delete (see WebhookController::handleUpsert). For a delete, omit 'after' and set eventType to \"delete\" - only docId is required then."
+          }
+        },
+        {
+          "name": "Sighting Webhook (create/update/delete)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"docId\": \"firestore-sighting-001\",\n  \"eventType\": \"create\",\n  \"after\": {\n    \"park\": \"Bwindi Impenetrable National Park\",\n    \"lat\": -1.05,\n    \"lng\": 29.7,\n    \"count\": 3,\n    \"notes\": \"Family group near the trailhead\",\n    \"ranger_uid\": null,\n    \"approval_status\": \"pending\",\n    \"reportedAt\": \"2026-08-12T09:00:00Z\"\n  }\n}"
+            },
+            "url": { "raw": "{{base_url}}/webhooks/sightings", "host": ["{{base_url}}"], "path": ["webhooks", "sightings"] }
+          }
+        },
+        {
+          "name": "SOS Alert Webhook (create/update/delete)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"docId\": \"firestore-sos-001\",\n  \"eventType\": \"create\",\n  \"after\": {\n    \"park\": \"Bwindi Impenetrable National Park\",\n    \"lat\": -1.05,\n    \"lng\": 29.7,\n    \"status\": \"open\",\n    \"reportedAt\": \"2026-08-12T09:00:00Z\"\n  }\n}"
+            },
+            "url": { "raw": "{{base_url}}/webhooks/sos-alerts", "host": ["{{base_url}}"], "path": ["webhooks", "sos-alerts"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Get Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/dashboard/stats?park_id=1",
+              "host": ["{{base_url}}"],
+              "path": ["dashboard", "stats"],
+              "query": [{ "key": "park_id", "value": "1", "description": "Ignored for Gamepark accounts, which are always scoped to their own park_id server-side." }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reference Data",
+      "item": [
+        {
+          "name": "List Parks",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/parks", "host": ["{{base_url}}"], "path": ["parks"] }
+          }
+        },
+        {
+          "name": "List Species",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/species", "host": ["{{base_url}}"], "path": ["species"] }
+          }
+        },
+        {
+          "name": "List Roles",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/roles", "host": ["{{base_url}}"], "path": ["roles"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rangers",
+      "item": [
+        {
+          "name": "List Rangers",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/rangers?park_id=1",
+              "host": ["{{base_url}}"],
+              "path": ["rangers"],
+              "query": [{ "key": "park_id", "value": "1", "disabled": true }]
+            }
+          }
+        },
+        {
+          "name": "Create Ranger",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"John\",\n  \"last_name\": \"Ranger\",\n  \"email\": \"ranger.new@wildwatch.app\",\n  \"phone_number\": \"+256700000001\",\n  \"password\": \"password123\",\n  \"park_id\": \"bwindi-impenetrable\",\n  \"mysql_park_id\": 1\n}"
+            },
+            "url": { "raw": "{{base_url}}/rangers", "host": ["{{base_url}}"], "path": ["rangers"] },
+            "description": "park_id is the Firebase park slug used to create the matching Firebase Auth account (see FirebaseService::createRangerAccount); mysql_park_id links the row to Laravel's own parks table and is separate on purpose."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Incidents",
+      "item": [
+        {
+          "name": "List Incidents",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/incidents?park_id=1&status=New&escalated=false&incident_type=Crop Damage&from=2026-01-01&to=2026-12-31&per_page=25",
+              "host": ["{{base_url}}"],
+              "path": ["incidents"],
+              "query": [
+                { "key": "park_id", "value": "1", "disabled": true },
+                { "key": "status", "value": "New", "disabled": true },
+                { "key": "escalated", "value": "false", "disabled": true },
+                { "key": "incident_type", "value": "Crop Damage", "disabled": true },
+                { "key": "from", "value": "2026-01-01", "disabled": true },
+                { "key": "to", "value": "2026-12-31", "disabled": true },
+                { "key": "per_page", "value": "25" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Incident",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/incidents/1", "host": ["{{base_url}}"], "path": ["incidents", "1"] }
+          }
+        },
+        {
+          "name": "Create Incident",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reported_by\": 1,\n  \"park_id\": 1,\n  \"incident_type\": \"Crop Damage\",\n  \"description\": \"Elephants raided a banana plantation overnight.\",\n  \"latitude\": -1.05,\n  \"longitude\": 29.7,\n  \"village\": \"Buhoma\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/incidents", "host": ["{{base_url}}"], "path": ["incidents"] },
+            "description": "incident_type must be one of: Wildlife Sighting, Crop Damage, Livestock Loss, Property Damage, Human Injury, Human Fatality."
+          }
+        },
+        {
+          "name": "Update Incident Status",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Assigned\",\n  \"is_escalated\": false,\n  \"remarks\": \"Ranger dispatched.\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/incidents/1/status", "host": ["{{base_url}}"], "path": ["incidents", "1", "status"] },
+            "description": "status is one of New, Assigned, In Progress, Resolved. Either status or is_escalated must be present (both are individually optional otherwise) - see IncidentController::updateStatus."
+          }
+        },
+        {
+          "name": "Assign Incident",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ranger_id\": 2\n}"
+            },
+            "url": { "raw": "{{base_url}}/incidents/1/assign", "host": ["{{base_url}}"], "path": ["incidents", "1", "assign"] }
+          }
+        },
+        {
+          "name": "Delete Incident",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/incidents/1", "host": ["{{base_url}}"], "path": ["incidents", "1"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "SOS Alerts",
+      "item": [
+        {
+          "name": "List SOS Alerts",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/sos-alerts?status=Pending&park_id=1",
+              "host": ["{{base_url}}"],
+              "path": ["sos-alerts"],
+              "query": [
+                { "key": "status", "value": "Pending", "disabled": true },
+                { "key": "park_id", "value": "1", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get SOS Alert",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/sos-alerts/1", "host": ["{{base_url}}"], "path": ["sos-alerts", "1"] }
+          }
+        },
+        {
+          "name": "Update SOS Alert Status",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"Responding\"\n}" },
+            "url": { "raw": "{{base_url}}/sos-alerts/1/status", "host": ["{{base_url}}"], "path": ["sos-alerts", "1", "status"] },
+            "description": "status is one of Pending, Responding, Resolved."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/users?role=Ranger&park_id=1&per_page=25",
+              "host": ["{{base_url}}"],
+              "path": ["users"],
+              "query": [
+                { "key": "role", "value": "Ranger", "disabled": true },
+                { "key": "park_id", "value": "1", "disabled": true },
+                { "key": "per_page", "value": "25" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get User",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/users/1", "host": ["{{base_url}}"], "path": ["users", "1"] }
+          }
+        },
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Bob\",\n  \"last_name\": \"Official\",\n  \"email\": \"bob.official@wildwatch.app\",\n  \"phone_number\": null,\n  \"password\": \"password123\",\n  \"role_id\": 1,\n  \"account_status\": \"Active\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/users", "host": ["{{base_url}}"], "path": ["users"] },
+            "description": "Either email or phone_number is required (not enforced by the field-level rules alone - see UserController::store)."
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Bob\",\n  \"account_status\": \"Suspended\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/users/1", "host": ["{{base_url}}"], "path": ["users", "1"] }
+          }
+        },
+        {
+          "name": "Invite User (UWA portal)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Alice\",\n  \"last_name\": \"Warden\",\n  \"email\": \"alice.warden@wildwatch.app\",\n  \"role_id\": 5,\n  \"park_id\": 1\n}"
+            },
+            "url": { "raw": "{{base_url}}/users/invite", "host": ["{{base_url}}"], "path": ["users", "invite"] },
+            "description": "Unlike /gamepark/personnel/invite, a UWA admin may invite for any role and any park - see UserController::invite. Sends a temporary-password email via PersonnelInviteMail."
+          }
+        }
+      ]
+    },
+    {
+      "name": "News Articles",
+      "item": [
+        {
+          "name": "List News Articles",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/news-articles?category=Conservation&per_page=25",
+              "host": ["{{base_url}}"],
+              "path": ["news-articles"],
+              "query": [
+                { "key": "category", "value": "Conservation", "disabled": true },
+                { "key": "per_page", "value": "25" }
+              ]
+            },
+            "description": "Requires Park Warden or UWA Official (see the warden_or_uwa middleware group)."
+          }
+        },
+        {
+          "name": "Get News Article",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/news-articles/1", "host": ["{{base_url}}"], "path": ["news-articles", "1"] }
+          }
+        },
+        {
+          "name": "Create News Article",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"New ranger patrol routes launched in Bwindi\",\n  \"excerpt\": \"UWA has introduced three new patrol routes to reduce human-wildlife conflict.\",\n  \"body\": \"Full article body goes here.\",\n  \"category\": \"Conservation\",\n  \"source\": \"Uganda Wildlife Authority\",\n  \"read_time\": \"3 min\",\n  \"theme\": \"FOREST\",\n  \"park_id\": 1,\n  \"published\": true,\n  \"published_at\": \"2026-08-12T09:00:00Z\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/news-articles", "host": ["{{base_url}}"], "path": ["news-articles"] },
+            "description": "theme is one of FOREST, WILDLIFE, SECURITY. author_id is set server-side from the authenticated user, not client-supplied."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Audit",
+      "item": [
+        {
+          "name": "List Audit Log",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/audit?per_page=50",
+              "host": ["{{base_url}}"],
+              "path": ["audit"],
+              "query": [{ "key": "per_page", "value": "50" }]
+            },
+            "description": "Incident status-change history. Automatically scoped to the caller's own park for Gamepark accounts."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Compensation Claims",
+      "description": "Cross-park, HQ-level - restricted to System Administrator and UWA Official (admin_or_uwa middleware, narrower than the general 'admin' alias).",
+      "item": [
+        {
+          "name": "List Claims",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/claims?status=Pending&per_page=25",
+              "host": ["{{base_url}}"],
+              "path": ["claims"],
+              "query": [
+                { "key": "status", "value": "Pending", "disabled": true },
+                { "key": "per_page", "value": "25" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Claim",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/claims/1", "host": ["{{base_url}}"], "path": ["claims", "1"] }
+          }
+        },
+        {
+          "name": "Approve Claim",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/claims/1/approve", "host": ["{{base_url}}"], "path": ["claims", "1", "approve"] }
+          }
+        },
+        {
+          "name": "Reject Claim",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Insufficient evidence submitted.\"\n}" },
+            "url": { "raw": "{{base_url}}/claims/1/reject", "host": ["{{base_url}}"], "path": ["claims", "1", "reject"] }
+          }
+        },
+        {
+          "name": "Mark Claim Paid",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount_paid\": 500000,\n  \"payment_method\": \"Mobile Money\",\n  \"transaction_reference\": \"MM-2026-000123\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/claims/1/mark-paid", "host": ["{{base_url}}"], "path": ["claims", "1", "mark-paid"] },
+            "description": "payment_method is one of Bank Transfer, Mobile Money, Cheque, Cash. Only claims already in 'Approved' status can be marked paid."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Forwarded Forms",
+      "description": "Cross-park, HQ-level review of evidence forms a Gamepark has verified and forwarded - restricted to System Administrator and UWA Official.",
+      "item": [
+        {
+          "name": "List Forwarded Forms",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/forwarded-forms?park_id=1",
+              "host": ["{{base_url}}"],
+              "path": ["forwarded-forms"],
+              "query": [{ "key": "park_id", "value": "1", "disabled": true }]
+            }
+          }
+        },
+        {
+          "name": "Get Forwarded Form",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/forwarded-forms/1", "host": ["{{base_url}}"], "path": ["forwarded-forms", "1"] },
+            "description": "404s unless the submission's status is actually 'Forwarded'."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Gamepark - Incidents",
+      "description": "Single-park portal operations. Every request in the Gamepark folders is scoped server-side to the signed-in account's own park_id.",
+      "item": [
+        {
+          "name": "Assign Incident (Gamepark)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"ranger_id\": 2\n}" },
+            "url": { "raw": "{{base_url}}/gamepark/incidents/1/assign", "host": ["{{base_url}}"], "path": ["gamepark", "incidents", "1", "assign"] },
+            "description": "403s if the incident belongs to a different park than the caller's own."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Gamepark - Evidence Forms",
+      "item": [
+        {
+          "name": "List Forms",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/gamepark/forms", "host": ["{{base_url}}"], "path": ["gamepark", "forms"] }
+          }
+        },
+        {
+          "name": "Get Form",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/gamepark/forms/1", "host": ["{{base_url}}"], "path": ["gamepark", "forms", "1"] }
+          }
+        },
+        {
+          "name": "Create Form",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Crop Damage Evidence Form\",\n  \"description\": \"Collected from residents reporting crop damage.\",\n  \"status\": \"Draft\",\n  \"fields\": [\n    { \"label\": \"Description of damage\", \"field_type\": \"textarea\", \"is_required\": true },\n    { \"label\": \"Estimated area affected (acres)\", \"field_type\": \"number\", \"is_required\": true },\n    { \"label\": \"Photo evidence\", \"field_type\": \"image\", \"is_required\": false },\n    { \"label\": \"Crop type\", \"field_type\": \"select\", \"options\": [\"Banana\", \"Maize\", \"Coffee\", \"Other\"], \"is_required\": true }\n  ]\n}"
+            },
+            "url": { "raw": "{{base_url}}/gamepark/forms", "host": ["{{base_url}}"], "path": ["gamepark", "forms"] },
+            "description": "field_type is one of text, textarea, number, date, select, image. status is Draft or Published (defaults to Draft)."
+          }
+        },
+        {
+          "name": "Update Form",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Published\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/gamepark/forms/1", "host": ["{{base_url}}"], "path": ["gamepark", "forms", "1"] },
+            "description": "Sending a 'fields' array replaces the form's entire field set (see EvidenceFormController::update) - omit it to only change title/description/status."
+          }
+        },
+        {
+          "name": "Delete Form",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/gamepark/forms/1", "host": ["{{base_url}}"], "path": ["gamepark", "forms", "1"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Gamepark - Form Submissions",
+      "item": [
+        {
+          "name": "List Submissions",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/gamepark/submissions?status=Submitted",
+              "host": ["{{base_url}}"],
+              "path": ["gamepark", "submissions"],
+              "query": [{ "key": "status", "value": "Submitted", "disabled": true }]
+            }
+          }
+        },
+        {
+          "name": "Get Submission",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/gamepark/submissions/1", "host": ["{{base_url}}"], "path": ["gamepark", "submissions", "1"] }
+          }
+        },
+        {
+          "name": "Verify or Reject Submission",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"verify\",\n  \"notes\": \"Confirmed against ranger patrol photos.\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/gamepark/submissions/1/verify", "host": ["{{base_url}}"], "path": ["gamepark", "submissions", "1", "verify"] },
+            "description": "decision is 'verify' or 'reject'. Only submissions currently in 'Submitted' status can be decided (409 otherwise)."
+          }
+        },
+        {
+          "name": "Forward Submission",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/gamepark/submissions/1/forward", "host": ["{{base_url}}"], "path": ["gamepark", "submissions", "1", "forward"] },
+            "description": "Only submissions already 'Verified' can be forwarded to the UWA portal (409 otherwise) - see the Forwarded Forms folder for the receiving side."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Gamepark - Personnel",
+      "item": [
+        {
+          "name": "List Personnel",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/gamepark/personnel", "host": ["{{base_url}}"], "path": ["gamepark", "personnel"] }
+          }
+        },
+        {
+          "name": "Invite Personnel",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"John\",\n  \"last_name\": \"Ranger\",\n  \"email\": \"john.ranger@wildwatch.app\",\n  \"role_id\": 2\n}"
+            },
+            "url": { "raw": "{{base_url}}/gamepark/personnel/invite", "host": ["{{base_url}}"], "path": ["gamepark", "personnel", "invite"] },
+            "description": "Unlike /users/invite, the park is always the inviter's own (never client-supplied) and role_id must resolve to Ranger, Community Wildlife Officer, or Park Warden - any other role is rejected with 422."
+          }
+        }
+      ]
+    }
+  ]
+}
