@@ -4,9 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Mail\PersonnelInviteMail;
+use App\Models\Park;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\FirebaseService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -18,6 +21,20 @@ class UserController extends Controller
     // Roles a Gamepark account is allowed to invite — park field staff only,
     // never UWA-level or system roles.
     private const GAMEPARK_INVITABLE_ROLES = ['Ranger', 'Community Wildlife Officer', 'Park Warden'];
+
+    // Portal roles that have a corresponding role in the mobile app's Firebase custom
+    // claims (see android-native-master-branch's UserRole.kt / AuthRepositoryImpl.mapRole)
+    // - an invited user in one of these roles also gets a Firebase Auth account
+    // provisioned so they can sign in to the mobile app with the same email.
+    // Community Wildlife Officer/System Administrator/Gamepark Officer have no mobile
+    // counterpart and are deliberately left out.
+    private const MOBILE_ROLE_CLAIMS = [
+        'Ranger' => 'ranger',
+        'Park Warden' => 'warden',
+        'UWA Official' => 'uwa_official',
+    ];
+
+    public function __construct(private FirebaseService $firebase) {}
 
     public function index(Request $request)
     {
@@ -168,20 +185,48 @@ class UserController extends Controller
     private function sendInvite(string $firstName, string $lastName, string $email, int $roleId, ?int $parkId): \Illuminate\Http\JsonResponse
     {
         $temporaryPassword = Str::password(12);
+        $roleName = Role::find($roleId)?->role_name ?? 'Personnel';
+        $mobileRole = self::MOBILE_ROLE_CLAIMS[$roleName] ?? null;
 
-        $user = User::create([
-            'first_name' => $firstName,
-            'last_name' => $lastName,
-            'email' => $email,
-            'password_hash' => Hash::make($temporaryPassword),
-            'park_id' => $parkId,
-            'account_status' => 'Active',
-        ]);
+        $user = DB::transaction(function () use ($firstName, $lastName, $email, $temporaryPassword, $roleId, $parkId, $mobileRole) {
+            $user = User::create([
+                'first_name' => $firstName,
+                'last_name' => $lastName,
+                'email' => $email,
+                'password_hash' => Hash::make($temporaryPassword),
+                'park_id' => $parkId,
+                'account_status' => 'Active',
+            ]);
 
-        $user->roles()->attach($roleId);
+            $user->roles()->attach($roleId);
+
+            if ($mobileRole !== null) {
+                $parkFirestoreId = $parkId !== null ? Park::find($parkId)?->firestore_id : null;
+                $firebaseUid = null;
+                try {
+                    $firebaseUid = $this->firebase->provisionMobileAccount(
+                        $email,
+                        $user->full_name,
+                        $mobileRole,
+                        $parkFirestoreId,
+                    );
+                    $user->update(['firebase_uid' => $firebaseUid]);
+                } catch (\Throwable $e) {
+                    if ($firebaseUid !== null) {
+                        try {
+                            $this->firebase->auth()->deleteUser($firebaseUid);
+                        } catch (\Throwable) {
+                            // Best-effort cleanup; the MySQL transaction still rolls back.
+                        }
+                    }
+                    throw new \RuntimeException('Firebase synchronization failed: ' . $e->getMessage(), 0, $e);
+                }
+            }
+
+            return $user;
+        });
+
         $user->load(['roles', 'park']);
-
-        $roleName = $user->roles->first()?->role_name ?? 'Personnel';
         $portalUrl = rtrim(env('FRONTEND_URL', 'http://localhost:5173'), '/') . '/portal';
 
         $mailSent = true;
@@ -194,6 +239,7 @@ class UserController extends Controller
                 roleName: $roleName,
                 portalUrl: $portalUrl,
                 parkName: $user->park?->park_name,
+                hasMobileAccount: $mobileRole !== null,
             ));
         } catch (\Throwable $e) {
             $mailSent = false;
@@ -205,7 +251,9 @@ class UserController extends Controller
             'user' => $user,
             'mail_sent' => $mailSent,
             'message' => $mailSent
-                ? 'Invitation email sent.'
+                ? ($mobileRole !== null
+                    ? 'Invitation email sent — they can sign in to the WildWatch mobile app with this email.'
+                    : 'Invitation email sent.')
                 : 'Account created, but the invite email could not be sent — check the mail configuration.',
             // Only surfaced when APP_DEBUG=true, to help diagnose a broken mail gateway without leaking details in production.
             'mail_error' => (! $mailSent && config('app.debug')) ? $mailError : null,

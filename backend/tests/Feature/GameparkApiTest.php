@@ -30,6 +30,7 @@ class GameparkApiTest extends TestCase
 
         $this->mock(FirebaseService::class, function ($mock) {
             $mock->shouldReceive('syncIncidentDocument')->andReturnNull();
+            $mock->shouldReceive('provisionMobileAccount')->andReturn('mock-firebase-uid');
         });
 
         Role::create(['role_name' => 'Gamepark Officer']);
@@ -239,8 +240,31 @@ class GameparkApiTest extends TestCase
 
         $response->assertStatus(201);
         $this->assertTrue($response->json('mail_sent'));
-        $this->assertDatabaseHas('users', ['email' => 'new-ranger@example.com', 'park_id' => $this->park->park_id]);
-        Mail::assertSent(PersonnelInviteMail::class);
+        $this->assertDatabaseHas('users', [
+            'email' => 'new-ranger@example.com',
+            'park_id' => $this->park->park_id,
+            'firebase_uid' => 'mock-firebase-uid',
+        ]);
+        Mail::assertSent(PersonnelInviteMail::class, fn ($mail) => $mail->hasMobileAccount === true);
+    }
+
+    public function test_gamepark_inviting_a_non_mobile_field_role_skips_firebase()
+    {
+        Mail::fake();
+
+        Role::create(['role_name' => 'Community Wildlife Officer']);
+        $roleId = Role::where('role_name', 'Community Wildlife Officer')->value('role_id');
+
+        $response = $this->postJson('/api/gamepark/personnel/invite', [
+            'first_name' => 'Community',
+            'last_name' => 'Officer',
+            'email' => 'cwo@example.com',
+            'role_id' => $roleId,
+        ], ['Authorization' => "Bearer $this->gameparkToken"]);
+
+        $response->assertStatus(201);
+        $this->assertDatabaseHas('users', ['email' => 'cwo@example.com', 'firebase_uid' => null]);
+        Mail::assertSent(PersonnelInviteMail::class, fn ($mail) => $mail->hasMobileAccount === false);
     }
 
     public function test_gamepark_cannot_invite_a_non_field_role()

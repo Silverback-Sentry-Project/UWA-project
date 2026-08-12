@@ -52,14 +52,24 @@ class FirebaseService
     }
 
     /**
-     * Create a Ranger account in Firebase Auth and a shadow document in Firestore.
+     * Provision a Firebase Auth account (+ Firestore shadow doc) for a portal-invited
+     * user who also needs to sign in to the mobile app. No password is set - the mobile
+     * app is passwordless (Firebase email-link sign-in only), and Firebase matches that
+     * later sign-in to this same account by email, inheriting the custom claims set here.
+     *
+     * Known caveat (currently inert, not a live bug): if Cloud Functions are ever
+     * re-enabled (this project is on the Spark plan, which cannot run them at all - see
+     * BRIDGE-CONTRACT.md), `onUserCreated` in functions/src/index.ts unconditionally
+     * resets any newly-created Firebase user to role "public" and overwrites the
+     * Firestore users/{uid} doc. That trigger would need a guard (e.g. skip when the doc
+     * already has source_system: "laravel") before this method's claims could be trusted
+     * to survive under Blaze.
      */
-    public function createRangerAccount(string $email, string $password, string $displayName, string $parkId)
+    public function provisionMobileAccount(string $email, string $displayName, string $role, ?string $parkFirestoreId)
     {
         // 1. Create User in Firebase Auth
         $userRecord = $this->auth->createUser([
             'email' => $email,
-            'password' => $password,
             'displayName' => $displayName,
         ]);
 
@@ -67,8 +77,8 @@ class FirebaseService
 
         // 2. Set Custom Claims
         $this->auth->setCustomUserClaims($uid, [
-            'role' => 'ranger',
-            'park_id' => $parkId,
+            'role' => $role,
+            'park_id' => $parkFirestoreId,
         ]);
 
         // 3. Create Shadow Document in Firestore
@@ -76,8 +86,8 @@ class FirebaseService
             'uid' => $uid,
             'email' => $email,
             'displayName' => $displayName,
-            'role' => 'ranger',
-            'park_id' => $parkId,
+            'role' => $role,
+            'park_id' => $parkFirestoreId,
             'source_system' => 'laravel',
             'created_at' => new \DateTime(),
         ]);

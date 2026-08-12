@@ -21,6 +21,13 @@
     <p>Please sign in and change your password as soon as possible.</p>
     <p><a href="{{ $portalUrl }}" style="display:inline-block; background:#4b5d2a; color:#fff; padding:10px 18px; border-radius:6px; text-decoration:none;">Sign in to the portal</a></p>
 
+    @if($hasMobileAccount)
+    <div style="background:#eef2e6; border:1px solid #cfd9be; border-radius:8px; padding:16px; margin:20px 0;">
+      <div style="font-weight:bold; margin-bottom:6px;">You can also sign in to the WildWatch mobile app</div>
+      <p style="margin:0;">Open the app, enter <strong>{{ $recipientEmail }}</strong> under "Continue with email", and tap the sign-in link we send you — no password needed there.</p>
+    </div>
+    @endif
+
     <p style="font-size:12px; color:#8a8770; margin-top:28px;">If you weren't expecting this invitation, you can ignore this email.</p>
   </div>
 </body>

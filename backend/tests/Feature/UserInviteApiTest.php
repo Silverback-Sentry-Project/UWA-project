@@ -6,6 +6,7 @@ use App\Mail\PersonnelInviteMail;
 use App\Models\Park;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\FirebaseService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -22,9 +23,15 @@ class UserInviteApiTest extends TestCase
     {
         parent::setUp();
 
+        $this->mock(FirebaseService::class, function ($mock) {
+            $mock->shouldReceive('provisionMobileAccount')->andReturn('mock-firebase-uid');
+        });
+
         Role::create(['role_name' => 'System Administrator']);
         Role::create(['role_name' => 'UWA Official']);
         Role::create(['role_name' => 'Ranger']);
+        Role::create(['role_name' => 'Park Warden']);
+        Role::create(['role_name' => 'Community Wildlife Officer']);
 
         $this->admin = User::create([
             'first_name' => 'Admin', 'last_name' => 'User', 'email' => 'admin@example.com',
@@ -61,7 +68,7 @@ class UserInviteApiTest extends TestCase
     {
         Mail::fake();
 
-        $park = Park::create(['park_name' => 'Bwindi', 'district' => 'Kanungu']);
+        $park = Park::create(['park_name' => 'Bwindi', 'district' => 'Kanungu', 'firestore_id' => 'bwindi-impenetrable']);
         $roleId = Role::where('role_name', 'Ranger')->value('role_id');
 
         $response = $this->postJson('/api/users/invite', [
@@ -73,7 +80,96 @@ class UserInviteApiTest extends TestCase
         ], ['Authorization' => "Bearer $this->adminToken"]);
 
         $response->assertStatus(201);
-        $this->assertDatabaseHas('users', ['email' => 'new-ranger@example.com', 'park_id' => $park->park_id]);
+        $this->assertDatabaseHas('users', [
+            'email' => 'new-ranger@example.com',
+            'park_id' => $park->park_id,
+            'firebase_uid' => 'mock-firebase-uid',
+        ]);
+        Mail::assertSent(PersonnelInviteMail::class, fn ($mail) => $mail->hasMobileAccount === true);
+    }
+
+    public function test_ranger_invite_provisions_firebase_with_the_parks_firestore_id_and_lowercase_role()
+    {
+        Mail::fake();
+        $this->mock(FirebaseService::class, function ($mock) {
+            $mock->shouldReceive('provisionMobileAccount')
+                ->once()
+                ->with('claims-check@example.com', 'Claims Check', 'ranger', 'bwindi-impenetrable')
+                ->andReturn('firebase-uid-123');
+        });
+
+        $park = Park::create(['park_name' => 'Bwindi', 'district' => 'Kanungu', 'firestore_id' => 'bwindi-impenetrable']);
+        $roleId = Role::where('role_name', 'Ranger')->value('role_id');
+
+        $response = $this->postJson('/api/users/invite', [
+            'first_name' => 'Claims',
+            'last_name' => 'Check',
+            'email' => 'claims-check@example.com',
+            'role_id' => $roleId,
+            'park_id' => $park->park_id,
+        ], ['Authorization' => "Bearer $this->adminToken"]);
+
+        $response->assertStatus(201);
+        $this->assertDatabaseHas('users', ['email' => 'claims-check@example.com', 'firebase_uid' => 'firebase-uid-123']);
+    }
+
+    public function test_park_warden_invite_also_gets_a_mobile_account()
+    {
+        Mail::fake();
+
+        $roleId = Role::where('role_name', 'Park Warden')->value('role_id');
+
+        $response = $this->postJson('/api/users/invite', [
+            'first_name' => 'New',
+            'last_name' => 'Warden',
+            'email' => 'new-warden@example.com',
+            'role_id' => $roleId,
+        ], ['Authorization' => "Bearer $this->adminToken"]);
+
+        $response->assertStatus(201);
+        $this->assertDatabaseHas('users', ['email' => 'new-warden@example.com', 'firebase_uid' => 'mock-firebase-uid']);
+    }
+
+    public function test_inviting_a_role_with_no_mobile_equivalent_skips_firebase_entirely()
+    {
+        Mail::fake();
+        $this->mock(FirebaseService::class, function ($mock) {
+            $mock->shouldNotReceive('provisionMobileAccount');
+        });
+
+        $roleId = Role::where('role_name', 'Community Wildlife Officer')->value('role_id');
+
+        $response = $this->postJson('/api/users/invite', [
+            'first_name' => 'Community',
+            'last_name' => 'Officer',
+            'email' => 'cwo-admin@example.com',
+            'role_id' => $roleId,
+        ], ['Authorization' => "Bearer $this->adminToken"]);
+
+        $response->assertStatus(201);
+        $this->assertDatabaseHas('users', ['email' => 'cwo-admin@example.com', 'firebase_uid' => null]);
+        Mail::assertSent(PersonnelInviteMail::class, fn ($mail) => $mail->hasMobileAccount === false);
+    }
+
+    public function test_ranger_invite_rolls_back_the_mysql_row_when_firebase_provisioning_fails()
+    {
+        Mail::fake();
+        $this->mock(FirebaseService::class, function ($mock) {
+            $mock->shouldReceive('provisionMobileAccount')->andThrow(new \RuntimeException('Firebase unreachable'));
+        });
+
+        $roleId = Role::where('role_name', 'Ranger')->value('role_id');
+
+        $response = $this->postJson('/api/users/invite', [
+            'first_name' => 'Doomed',
+            'last_name' => 'Ranger',
+            'email' => 'doomed-ranger@example.com',
+            'role_id' => $roleId,
+        ], ['Authorization' => "Bearer $this->adminToken"]);
+
+        $response->assertStatus(500);
+        $this->assertDatabaseMissing('users', ['email' => 'doomed-ranger@example.com']);
+        Mail::assertNothingSent();
     }
 
     public function test_invite_fails_when_email_already_taken()

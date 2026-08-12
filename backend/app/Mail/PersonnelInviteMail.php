@@ -19,6 +19,7 @@ class PersonnelInviteMail extends Mailable
         public string $roleName,
         public string $portalUrl,
         public ?string $parkName = null,
+        public bool $hasMobileAccount = false,
     ) {}
 
     public function envelope(): Envelope
