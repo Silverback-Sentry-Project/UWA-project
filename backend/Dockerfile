@@ -5,15 +5,13 @@
 # flagged there as a concrete, checkable gap for this exact deploy.
 FROM php:8.4-fpm-bookworm
 
-# sodium is needed by kreait/firebase-php's JWT dependency chain (confirmed via a local
-# composer install dry-run against this Dockerfile's exact command). iconv is usually already
-# compiled into official php-docker images and docker-php-ext-install treats already-built-in
-# extensions as a no-op - included defensively since this specific gap only showed up on a
-# non-Docker local PHP install, not something actually built and run in a container here (no
-# Docker daemon was available in the environment that wrote this file - verify this build
-# actually succeeds before relying on it).
+# sodium is needed by kreait/firebase-php's JWT dependency chain. docker-php-ext-install
+# sodium needs libsodium's headers (libsodium-dev) to compile against - confirmed by an
+# actual Render build failure without it ("Package 'libsodium', required by 'virtual:world',
+# not found"), not just a dry-run assumption. iconv is usually already compiled into official
+# php-docker images and docker-php-ext-install treats already-built-in extensions as a no-op.
 RUN apt-get update && apt-get install -y \
-    git curl unzip zip libpq-dev libzip-dev \
+    git curl unzip zip libpq-dev libzip-dev libsodium-dev \
     && docker-php-ext-install pdo pdo_pgsql bcmath sodium iconv \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
