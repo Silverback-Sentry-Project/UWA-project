@@ -34,20 +34,43 @@ return new class extends Migration
             ]);
         }
 
-        Schema::table('incidents', function (Blueprint $table) {
-            $table->enum('status', ['New', 'Assigned', 'In Progress', 'Resolved'])
-                ->default('New')
-                ->change();
-        });
+        // Laravel's Blueprint::change() on an enum column generates a single
+        // "ALTER COLUMN ... TYPE varchar CHECK (...)" statement for Postgres, which
+        // Postgres rejects outright (a TYPE change and a CHECK constraint can't be
+        // combined in one ALTER COLUMN clause - confirmed by actually running this
+        // migration against real Postgres, not assumed from documentation). MySQL and
+        // SQLite handle the combined form fine, so only Postgres needs the manual
+        // two-statement form here.
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('ALTER TABLE incidents DROP CONSTRAINT incidents_status_check');
+            DB::statement(
+                "ALTER TABLE incidents ADD CONSTRAINT incidents_status_check ".
+                "CHECK (status IN ('New', 'Assigned', 'In Progress', 'Resolved'))"
+            );
+        } else {
+            Schema::table('incidents', function (Blueprint $table) {
+                $table->enum('status', ['New', 'Assigned', 'In Progress', 'Resolved'])
+                    ->default('New')
+                    ->change();
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('incidents', function (Blueprint $table) {
-            $table->enum('status', ['New', 'Assigned', 'In Progress', 'Resolved', 'Escalated'])
-                ->default('New')
-                ->change();
-        });
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('ALTER TABLE incidents DROP CONSTRAINT incidents_status_check');
+            DB::statement(
+                "ALTER TABLE incidents ADD CONSTRAINT incidents_status_check ".
+                "CHECK (status IN ('New', 'Assigned', 'In Progress', 'Resolved', 'Escalated'))"
+            );
+        } else {
+            Schema::table('incidents', function (Blueprint $table) {
+                $table->enum('status', ['New', 'Assigned', 'In Progress', 'Resolved', 'Escalated'])
+                    ->default('New')
+                    ->change();
+            });
+        }
 
         DB::table('incidents')->where('is_escalated', true)->update(['status' => 'Escalated']);
 

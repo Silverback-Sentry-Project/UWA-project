@@ -109,7 +109,7 @@ class IncidentObserverTest extends TestCase
         return Incident::create([
             'reported_by' => $user->user_id,
             'park_id' => $park->park_id,
-            'incident_type' => 'Conflict',
+            'incident_type' => 'Crop Damage',
             'description' => 'Crop damage near village',
             'latitude' => -1.05,
             'longitude' => 29.7,

@@ -25,7 +25,7 @@ class IncidentEscalationMigrationTest extends TestCase
             'longitude' => 0,
             'status' => 'Escalated',
             'created_at' => now(),
-        ]);
+        ], 'incident_id');
 
         DB::table('incident_status_history')->insert([
             [
@@ -53,7 +53,7 @@ class IncidentEscalationMigrationTest extends TestCase
             'longitude' => 0,
             'status' => 'Escalated',
             'created_at' => now(),
-        ]);
+        ], 'incident_id');
 
         $this->runEscalationMigration();
 
@@ -100,7 +100,16 @@ class IncidentEscalationMigrationTest extends TestCase
     private function rebuildIncidentsTableToPreMigrationSchema(): array
     {
         Schema::disableForeignKeyConstraints();
-        Schema::dropIfExists('incidents');
+        // disableForeignKeyConstraints() has no real effect on Postgres (no session-level FK
+        // toggle there, unlike MySQL's FOREIGN_KEY_CHECKS or SQLite's foreign_keys pragma) -
+        // confirmed by actually running this against real Postgres, where a plain DROP TABLE
+        // fails with dependent-object errors from every table with a FK to incidents. Needs an
+        // explicit CASCADE there specifically.
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('DROP TABLE IF EXISTS incidents CASCADE');
+        } else {
+            Schema::dropIfExists('incidents');
+        }
         Schema::create('incidents', function (Blueprint $table) {
             $table->id('incident_id');
             $table->string('firestore_doc_id', 128)->nullable()->unique();
@@ -123,7 +132,11 @@ class IncidentEscalationMigrationTest extends TestCase
         });
         Schema::enableForeignKeyConstraints();
 
-        $parkId = DB::table('parks')->insertGetId(['park_name' => 'Test Park', 'district' => 'Test District']);
+        // insertGetId()'s second argument (the primary key column) defaults to "id" - harmless
+        // on MySQL/SQLite, where lastInsertId() doesn't actually need the name, but Postgres's
+        // RETURNING-clause implementation does, and neither of these tables uses "id" as its
+        // primary key. Confirmed by actually running this against real Postgres.
+        $parkId = DB::table('parks')->insertGetId(['park_name' => 'Test Park', 'district' => 'Test District'], 'park_id');
         $userId = DB::table('users')->insertGetId([
             'first_name' => 'Test',
             'last_name' => 'User',
@@ -131,7 +144,7 @@ class IncidentEscalationMigrationTest extends TestCase
             'password_hash' => 'hash',
             'account_status' => 'Active',
             'created_at' => now(),
-        ]);
+        ], 'user_id');
 
         return [$parkId, $userId];
     }
