@@ -29,7 +29,7 @@ npm run format         # prettier --write
 
 ## Backend
 
-See `backend/README.md` for setup (composer install, `.env`, migrations, seeding) and `../wildwatch-local-development-env-setup/SETUP.md` for the full Docker stack runbook.
+See `backend/README.md` for setup (composer install, `.env`, migrations, seeding) and `../HOSTED-CUTOVER-PLAN.md` for the hosted-services path this now runs against — the local Docker stack that used to bundle this with Firebase emulators has been retired.
 
 ## Bridge surface
 

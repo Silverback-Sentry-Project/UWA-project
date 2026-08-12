@@ -20,7 +20,7 @@ This is now the intended default rather than the local Docker stack. Provision a
 
 Copy `.env.example` to `.env`, generate an application key with the Artisan `key:generate` command, configure the database connection (SQLite needs no further configuration beyond the default `database/database.sqlite` path), and run the Artisan `migrate --seed` command followed by `artisan serve`. The API is then available at `http://localhost:8000/api`. Authenticate with a `POST` to `/api/login` and use the returned Sanctum token as a bearer token on subsequent requests. A seeded System Administrator login is documented in `../BRIDGE-CONTRACT.md`'s seed fixture mapping section — change that password after first login in any environment that isn't purely local and disposable.
 
-A full local Docker stack (Firebase emulators, MySQL, Redis, Mailpit, this API, and the portal frontend all wired together) still exists at `../wildwatch-local-development-env-setup/`, documented in that directory's own setup runbook. It has not been retired, but the hosted-services path above is now the primary documented workflow; treat the Docker stack as an interim or offline-development option rather than the default.
+The full local Docker stack that used to wire Firebase emulators, MySQL, Redis, Mailpit, this API, and the portal frontend together has been retired; the two options are running this API standalone as described above, or the hosted-services path.
 
 ## Testing and code style
 

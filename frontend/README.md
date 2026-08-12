@@ -4,7 +4,7 @@ React 19 and TanStack Start (file-based routing, server-side rendering) admin an
 
 ## What this is for
 
-The primary, currently-scoped surface is the `portal.*` route group: dashboard, incidents, claims, conflicts, hotspots, ranger assignments, audit, and settings — the warden and UWA Official administrative experience. The codebase also contains `ranger.*` and `community.*` route groups, real implemented screens that largely mirror functionality the native mobile app (`android-native-master-branch/`) already provides for rangers and the public. Whether those two groups should grow into a maintained parallel web experience or stay deprioritized in favor of the native app is a product decision, not a technical one; see `../wildwatch-local-development-env-setup/WildWatch-Platform-Plan.md` section 9.4 for the original reasoning behind treating them as lower priority.
+The primary, currently-scoped surface is the `portal.*` route group: dashboard, incidents, claims, conflicts, hotspots, ranger assignments, audit, and settings — the warden and UWA Official administrative experience. The codebase also contains `ranger.*` and `community.*` route groups, real implemented screens that largely mirror functionality the native mobile app (`android-native-master-branch/`) already provides for rangers and the public. Whether those two groups should grow into a maintained parallel web experience or stay deprioritized in favor of the native app is a product decision, not a technical one. The original reasoning for treating them as lower priority (from a planning document retired along with the local dev stack, not preserved verbatim elsewhere): building out a second, web-based ranger/public experience means maintaining the same functionality twice, in two languages, against two different backends — a materially larger maintenance surface than one native app plus one admin portal — unless there's a concrete reason to want a parallel web experience for those roles (e.g. rangers without smartphones needing a desktop fallback).
 
 Who can reach which part of the portal is governed by the same role model documented for the backend — see `../REPOS.md`'s `web-portal/` section for the current role-to-middleware mapping, and `../BRIDGE-CONTRACT.md` for how data moves between this portal, the Laravel API, and the mobile app's Firestore data.
 
@@ -18,7 +18,7 @@ Set the `VITE_API_URL` environment variable to the deployed Laravel API's base U
 
 ## Running locally
 
-Install dependencies, copy `.env.example` to `.env` and adjust `VITE_API_URL` if the API isn't running at its default local address, then start the development server. The local Docker stack at `../wildwatch-local-development-env-setup/` can run this alongside the Laravel API and Firebase emulators if a full-fidelity local environment is wanted; see that directory's own setup runbook. That stack has not been retired, but the hosted-services path above is now the primary documented workflow.
+Install dependencies, copy `.env.example` to `.env` and adjust `VITE_API_URL` to point at wherever the Laravel API is actually reachable, then start the development server. There is no longer a local Docker stack to run this against — it was retired once the hosted-services path above became the primary workflow — so local development means running this frontend against either a real deployed API or a manually-started local Laravel instance (`../backend/README.md`).
 
 ## Authentication
 
