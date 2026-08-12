@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use Kreait\Firebase\Factory;
-use Kreait\Firebase\Auth;
+use Kreait\Firebase\Contract\Auth;
 use Kreait\Firebase\Firestore;
 
 class FirebaseService

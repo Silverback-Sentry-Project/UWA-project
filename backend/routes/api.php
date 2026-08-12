@@ -26,10 +26,20 @@ Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:6,
 Route::get('/public/parks', [ParkController::class, 'publicIndex']);
 
 // Firebase → Laravel bridge (HMAC-protected, outside Sanctum)
+// Legacy path: only reachable if a Cloud-Functions relay exists (Blaze plan). Kept for parity/tests.
 Route::middleware('webhook.signature')->prefix('webhooks')->group(function () {
     Route::post('/incidents', [WebhookController::class, 'incidents']);
     Route::post('/sightings', [WebhookController::class, 'sightings']);
     Route::post('/sos-alerts', [WebhookController::class, 'sosAlerts']);
+});
+
+// Firebase → Laravel bridge, mobile-direct (Spark plan: no Cloud Functions relay, so the mobile
+// app calls Laravel itself after writing to Firestore). Authenticated by the caller's own Firebase
+// ID token instead of the shared HMAC secret above - see VerifyFirebaseIdToken.
+Route::middleware('firebase.idtoken')->prefix('mobile')->group(function () {
+    Route::post('/incidents', [WebhookController::class, 'mobileIncidents']);
+    Route::post('/sightings', [WebhookController::class, 'mobileSightings']);
+    Route::post('/sos-alerts', [WebhookController::class, 'mobileSosAlerts']);
 });
 
 // Authenticated admin-portal routes

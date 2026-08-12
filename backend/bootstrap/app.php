@@ -4,6 +4,7 @@ use App\Http\Middleware\EnsureAdmin;
 use App\Http\Middleware\EnsureAdminOrUwaOfficial;
 use App\Http\Middleware\EnsureGamepark;
 use App\Http\Middleware\EnsureWardenOrUwaOfficial;
+use App\Http\Middleware\VerifyFirebaseIdToken;
 use App\Http\Middleware\VerifyWebhookSignature;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -20,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => EnsureAdmin::class,
             'webhook.signature' => VerifyWebhookSignature::class,
+            'firebase.idtoken' => VerifyFirebaseIdToken::class,
             'warden_or_uwa' => EnsureWardenOrUwaOfficial::class,
             'gamepark' => EnsureGamepark::class,
             'admin_or_uwa' => EnsureAdminOrUwaOfficial::class,
