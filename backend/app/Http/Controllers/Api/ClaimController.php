@@ -5,11 +5,14 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\CompensationClaim;
 use App\Models\Payment;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class ClaimController extends Controller
 {
+    public function __construct(private readonly NotificationService $notifications) {}
+
     public function index(Request $request)
     {
         $query = CompensationClaim::with(['claimant', 'incident.park', 'incident.species', 'payment']);
@@ -45,6 +48,17 @@ class ClaimController extends Controller
             'approved_at' => now(),
         ]);
 
+        // A no-op for most claims today - most claimants are mobile/public reporters with no
+        // portal account, so this only actually lands a notification for the minority who
+        // have one (User::canAccessPortal() eligible or not, either way it's harmless if it
+        // never gets read).
+        $this->notifications->notifyUser(
+            $claim->claimant,
+            'Compensation claim approved',
+            "Your compensation claim #{$claim->claim_id} has been approved.",
+            'Compensation',
+        );
+
         return response()->json($claim->fresh());
     }
 
@@ -69,6 +83,14 @@ class ClaimController extends Controller
             'reviewed_by' => $request->user()->user_id,
             'reviewed_at' => now(),
         ]);
+
+        $this->notifications->notifyUser(
+            $claim->claimant,
+            'Compensation claim rejected',
+            "Your compensation claim #{$claim->claim_id} was rejected.".
+                ($request->filled('reason') ? " Reason: {$request->reason}" : ''),
+            'Compensation',
+        );
 
         return response()->json($claim->fresh());
     }
@@ -98,6 +120,13 @@ class ClaimController extends Controller
         ]);
 
         $claim->update(['claim_status' => 'Paid']);
+
+        $this->notifications->notifyUser(
+            $claim->claimant,
+            'Compensation payment issued',
+            "Payment for compensation claim #{$claim->claim_id} has been issued.",
+            'Compensation',
+        );
 
         return response()->json($claim->fresh(['payment']));
     }

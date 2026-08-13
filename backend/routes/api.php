@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\EvidenceFormSubmissionController;
 use App\Http\Controllers\Api\ForwardedFormController;
 use App\Http\Controllers\Api\IncidentController;
 use App\Http\Controllers\Api\NewsArticleController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ParkController;
 use App\Http\Controllers\Api\RangerController;
 use App\Http\Controllers\Api\RoleController;
@@ -71,6 +72,9 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::post('/users/invite', [UserController::class, 'invite']);
     Route::get('/users/{user}', [UserController::class, 'show']);
     Route::patch('/users/{user}', [UserController::class, 'update']);
+
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markRead']);
 });
 
 // News feed authoring — Park Warden / UWA Official only
