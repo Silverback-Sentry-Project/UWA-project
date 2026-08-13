@@ -27,7 +27,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
-        if (! $user->isAdmin() && ! $user->hasRole('UWA Official')) {
+        if (! $user->canAccessPortal()) {
             return response()->json([
                 'message' => 'This account does not have access to the mission control portal.',
             ], 403);

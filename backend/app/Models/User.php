@@ -11,7 +11,9 @@ class User extends Authenticatable
     use HasApiTokens, Notifiable;
 
     protected $table = 'users';
+
     protected $primaryKey = 'user_id';
+
     public $timestamps = false;
 
     protected $fillable = [
@@ -59,6 +61,24 @@ class User extends Authenticatable
     public function isGamepark(): bool
     {
         return $this->hasRole('Gamepark Officer') && $this->park_id !== null;
+    }
+
+    /**
+     * Whether this account can sign into the web portal at all - the same role set
+     * EnsureAdmin's route group protects. AuthController::login used to duplicate a
+     * narrower version of this check (System Administrator / UWA Official only) that
+     * silently drifted from EnsureAdmin's actual intent, locking Park Warden and
+     * Gamepark Officer out of login entirely even though warden_or_uwa/gamepark
+     * middleware and their own dedicated routes exist specifically to serve those two
+     * roles. Single source of truth now - update this method, not the call sites, if
+     * the portal-eligible role set ever changes.
+     */
+    public function canAccessPortal(): bool
+    {
+        return $this->isAdmin()
+            || $this->hasRole('UWA Official')
+            || $this->hasRole('Park Warden')
+            || $this->hasRole('Gamepark Officer');
     }
 
     public function park()
