@@ -17,6 +17,7 @@ class UserInviteApiTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private string $adminToken;
 
     protected function setUp(): void
@@ -74,14 +75,14 @@ class UserInviteApiTest extends TestCase
         $response = $this->postJson('/api/users/invite', [
             'first_name' => 'New',
             'last_name' => 'Ranger',
-            'email' => 'new-ranger@example.com',
+            'email' => 'new.ranger@gmail.com',
             'role_id' => $roleId,
             'park_id' => $park->park_id,
         ], ['Authorization' => "Bearer $this->adminToken"]);
 
         $response->assertStatus(201);
         $this->assertDatabaseHas('users', [
-            'email' => 'new-ranger@example.com',
+            'email' => 'new.ranger@gmail.com',
             'park_id' => $park->park_id,
             'firebase_uid' => 'mock-firebase-uid',
         ]);
@@ -94,7 +95,7 @@ class UserInviteApiTest extends TestCase
         $this->mock(FirebaseService::class, function ($mock) {
             $mock->shouldReceive('provisionMobileAccount')
                 ->once()
-                ->with('claims-check@example.com', 'Claims Check', 'ranger', 'bwindi-impenetrable')
+                ->with('claims.check@gmail.com', 'Claims Check', 'ranger', 'bwindi-impenetrable')
                 ->andReturn('firebase-uid-123');
         });
 
@@ -104,13 +105,58 @@ class UserInviteApiTest extends TestCase
         $response = $this->postJson('/api/users/invite', [
             'first_name' => 'Claims',
             'last_name' => 'Check',
-            'email' => 'claims-check@example.com',
+            'email' => 'claims.check@gmail.com',
             'role_id' => $roleId,
             'park_id' => $park->park_id,
         ], ['Authorization' => "Bearer $this->adminToken"]);
 
         $response->assertStatus(201);
-        $this->assertDatabaseHas('users', ['email' => 'claims-check@example.com', 'firebase_uid' => 'firebase-uid-123']);
+        $this->assertDatabaseHas('users', ['email' => 'claims.check@gmail.com', 'firebase_uid' => 'firebase-uid-123']);
+    }
+
+    /**
+     * Regression test: the mobile app only lets a Ranger session stand if it was
+     * established via Google Sign-In with a @gmail.com address (see
+     * AuthRepositoryImpl.violatesRangerSignInPolicy) - inviting a Ranger with any other
+     * domain would provision an account that can never actually sign in.
+     */
+    public function test_ranger_invite_rejects_a_non_gmail_address()
+    {
+        Mail::fake();
+        $this->mock(FirebaseService::class, function ($mock) {
+            $mock->shouldNotReceive('provisionMobileAccount');
+        });
+
+        $roleId = Role::where('role_name', 'Ranger')->value('role_id');
+
+        $response = $this->postJson('/api/users/invite', [
+            'first_name' => 'Wrong',
+            'last_name' => 'Domain',
+            'email' => 'wrong.domain@wildwatch.app',
+            'role_id' => $roleId,
+        ], ['Authorization' => "Bearer $this->adminToken"]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['email']);
+        $this->assertDatabaseMissing('users', ['email' => 'wrong.domain@wildwatch.app']);
+        Mail::assertNothingSent();
+    }
+
+    public function test_non_ranger_roles_are_not_restricted_to_gmail_addresses()
+    {
+        Mail::fake();
+
+        $roleId = Role::where('role_name', 'UWA Official')->value('role_id');
+
+        $response = $this->postJson('/api/users/invite', [
+            'first_name' => 'Any',
+            'last_name' => 'Domain',
+            'email' => 'any.domain@wildwatch.app',
+            'role_id' => $roleId,
+        ], ['Authorization' => "Bearer $this->adminToken"]);
+
+        $response->assertStatus(201);
+        $this->assertDatabaseHas('users', ['email' => 'any.domain@wildwatch.app']);
     }
 
     public function test_park_warden_invite_also_gets_a_mobile_account()
@@ -163,12 +209,12 @@ class UserInviteApiTest extends TestCase
         $response = $this->postJson('/api/users/invite', [
             'first_name' => 'Doomed',
             'last_name' => 'Ranger',
-            'email' => 'doomed-ranger@example.com',
+            'email' => 'doomed.ranger@gmail.com',
             'role_id' => $roleId,
         ], ['Authorization' => "Bearer $this->adminToken"]);
 
         $response->assertStatus(500);
-        $this->assertDatabaseMissing('users', ['email' => 'doomed-ranger@example.com']);
+        $this->assertDatabaseMissing('users', ['email' => 'doomed.ranger@gmail.com']);
         Mail::assertNothingSent();
     }
 
@@ -221,13 +267,13 @@ class UserInviteApiTest extends TestCase
         $response = $this->postJson('/api/users/invite', [
             'first_name' => 'Offline',
             'last_name' => 'Mail',
-            'email' => 'offline-mail@example.com',
+            'email' => 'offline.mail@gmail.com',
             'role_id' => $roleId,
         ], ['Authorization' => "Bearer $this->adminToken"]);
 
         $response->assertStatus(201);
         $this->assertFalse($response->json('mail_sent'));
-        $this->assertDatabaseHas('users', ['email' => 'offline-mail@example.com']);
+        $this->assertDatabaseHas('users', ['email' => 'offline.mail@gmail.com']);
     }
 
     public function test_invite_requires_authentication()

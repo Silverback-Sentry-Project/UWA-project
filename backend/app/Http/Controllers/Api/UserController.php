@@ -8,6 +8,7 @@ use App\Models\Park;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\FirebaseService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -182,11 +183,21 @@ class UserController extends Controller
         );
     }
 
-    private function sendInvite(string $firstName, string $lastName, string $email, int $roleId, ?int $parkId): \Illuminate\Http\JsonResponse
+    private function sendInvite(string $firstName, string $lastName, string $email, int $roleId, ?int $parkId): JsonResponse
     {
         $temporaryPassword = Str::password(12);
         $roleName = Role::find($roleId)?->role_name ?? 'Personnel';
         $mobileRole = self::MOBILE_ROLE_CLAIMS[$roleName] ?? null;
+
+        // The mobile app only lets a Ranger session stand if it was established via Google
+        // Sign-In with a @gmail.com address (AuthRepositoryImpl.violatesRangerSignInPolicy) -
+        // inviting a Ranger with any other address would provision an account that can never
+        // actually sign in, so reject it here instead of letting that surprise show up later.
+        if ($roleName === 'Ranger' && ! str_ends_with(strtolower($email), '@gmail.com')) {
+            return response()->json([
+                'errors' => ['email' => ['Ranger accounts must use a @gmail.com address - mobile sign-in for rangers is restricted to Google accounts.']],
+            ], 422);
+        }
 
         $user = DB::transaction(function () use ($firstName, $lastName, $email, $temporaryPassword, $roleId, $parkId, $mobileRole) {
             $user = User::create([
@@ -219,7 +230,7 @@ class UserController extends Controller
                             // Best-effort cleanup; the MySQL transaction still rolls back.
                         }
                     }
-                    throw new \RuntimeException('Firebase synchronization failed: ' . $e->getMessage(), 0, $e);
+                    throw new \RuntimeException('Firebase synchronization failed: '.$e->getMessage(), 0, $e);
                 }
             }
 
@@ -227,7 +238,7 @@ class UserController extends Controller
         });
 
         $user->load(['roles', 'park']);
-        $portalUrl = rtrim(env('FRONTEND_URL', 'http://localhost:5173'), '/') . '/portal';
+        $portalUrl = rtrim(env('FRONTEND_URL', 'http://localhost:5173'), '/').'/portal';
 
         $mailSent = true;
         $mailError = null;
@@ -244,7 +255,7 @@ class UserController extends Controller
         } catch (\Throwable $e) {
             $mailSent = false;
             $mailError = $e->getMessage();
-            Log::warning('Personnel invite email failed to send: ' . $mailError);
+            Log::warning('Personnel invite email failed to send: '.$mailError);
         }
 
         return response()->json([
