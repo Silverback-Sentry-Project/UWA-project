@@ -13,9 +13,12 @@ return [
     // showed the endpoint itself working fine). Rather than depend entirely on that dashboard
     // value being correct, the known real production frontend origin is now also hardcoded
     // below as a floor that always works regardless of Render dashboard state; the env var is
-    // additive on top of it, not a replacement for it.
+    // additive on top of it, not a replacement for it. Worker renamed from
+    // silverback-sentry-project-uwa-project-frontend to wildwatch-portal the same day - the
+    // *.sqmson-mandre.workers.dev pattern below already covers either name, this literal
+    // entry is just for exact-match clarity on the current one.
     'allowed_origins' => array_values(array_unique(array_filter(array_merge(
-        ['https://silverback-sentry-project-uwa-project-frontend.sqmson-mandre.workers.dev'],
+        ['https://wildwatch-portal.sqmson-mandre.workers.dev'],
         env('CORS_ALLOWED_ORIGINS')
             ? array_map('trim', explode(',', env('CORS_ALLOWED_ORIGINS')))
             : [],

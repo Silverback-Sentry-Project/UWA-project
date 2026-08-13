@@ -14,16 +14,21 @@ class CorsTest extends TestCase
     // CORS_ALLOWED_ORIGINS env var actually being set correctly.
     public function test_the_deployed_cloudflare_frontend_origin_is_allowed(): void
     {
-        $origin = 'https://silverback-sentry-project-uwa-project-frontend.sqmson-mandre.workers.dev';
+        // wildwatch-portal, renamed 2026-08-13 from the original auto-generated
+        // silverback-sentry-project-uwa-project-frontend.
+        $origin = 'https://wildwatch-portal.sqmson-mandre.workers.dev';
 
         $response = $this->postJson('/api/login', [], ['Origin' => $origin]);
 
         $response->assertHeader('Access-Control-Allow-Origin', $origin);
     }
 
-    public function test_a_renamed_worker_under_the_same_cloudflare_account_is_allowed(): void
+    public function test_a_differently_named_worker_under_the_same_cloudflare_account_is_allowed(): void
     {
-        $origin = 'https://wildwatch-portal.sqmson-mandre.workers.dev';
+        // Proves the *.sqmson-mandre.workers.dev pattern generalizes beyond the one
+        // hardcoded exact-match entry above - covers a future rename or a preview deploy
+        // under a different script name without needing a code change.
+        $origin = 'https://some-preview-deploy.sqmson-mandre.workers.dev';
 
         $response = $this->postJson('/api/login', [], ['Origin' => $origin]);
 

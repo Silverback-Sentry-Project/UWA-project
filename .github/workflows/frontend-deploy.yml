@@ -1,10 +1,17 @@
 name: Frontend build + deploy
 
-# Typechecks and builds the TanStack Start portal, then deploys the prebuilt
-# Worker to Cloudflare via `nitro deploy --prebuilt` (the exact command the
-# project's own build output already recommends - see vite.config.ts's Nitro
-# Cloudflare preset). Gated behind a clean typecheck/build, same reasoning as
-# backend-deploy.yml's test-before-deploy gate.
+# Typechecks and builds the TanStack Start portal, then deploys to Cloudflare.
+# Gated behind a clean typecheck/build, same reasoning as backend-deploy.yml's
+# test-before-deploy gate.
+#
+# Not `nitro deploy --prebuilt` (the command the build output itself suggests) -
+# that has no way to override the Worker name, and Nitro's Cloudflare preset
+# auto-derives one from build context (`silverback-sentry-project-uwa-project-
+# frontend`, a leftover from this project's original working title). Renamed to
+# `wildwatch-portal` 2026-08-13 by patching the generated wrangler.json before
+# calling `wrangler deploy` directly - if this workflow reverted to plain
+# `nitro deploy --prebuilt`, the next deploy would silently recreate the old
+# auto-generated name as a second, separate Worker instead of updating this one.
 #
 # Required repo secrets (Settings -> Secrets and variables -> Actions):
 #   CLOUDFLARE_API_TOKEN - a Cloudflare API token scoped to Workers Scripts
@@ -46,6 +53,10 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Set Worker name
+        run: |
+          sed -i 's/"name": "[^"]*"/"name": "wildwatch-portal"/' .output/server/wrangler.json
+
       - name: Deploy to Cloudflare
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -55,4 +66,4 @@ jobs:
             echo "CLOUDFLARE_API_TOKEN not set - skipping deploy. Build/typecheck still ran and reported pass/fail."
             exit 0
           fi
-          npx nitro deploy --prebuilt
+          npx wrangler deploy --config .output/server/wrangler.json
