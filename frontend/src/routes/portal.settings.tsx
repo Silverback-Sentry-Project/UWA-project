@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { PortalShell } from "@/components/portal/PortalShell";
+import { PortalShell, StatusBadge } from "@/components/portal/PortalShell";
 import { apiFetch, ApiError } from "@/lib/api";
 import type { Paginated } from "@/lib/api-types";
 import { ShieldCheck, KeyRound, UserPlus } from "lucide-react";
