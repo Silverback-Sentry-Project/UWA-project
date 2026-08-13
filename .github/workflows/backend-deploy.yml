@@ -39,7 +39,11 @@ jobs:
           coverage: none
 
       - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist
+        # --ignore-platform-req=ext-grpc matches the production Dockerfile: google/cloud-firestore's
+        # grpc transport is optional (falls back to REST without it) and grpc has no standard
+        # docker-php-ext-install/setup-php target, so this is the established way to satisfy
+        # composer's platform check without actually installing the extension.
+        run: composer install --no-interaction --prefer-dist --ignore-platform-req=ext-grpc
 
       - name: Prepare test env
         run: |
