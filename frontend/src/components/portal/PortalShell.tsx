@@ -8,6 +8,7 @@ import {
   UserCheck,
   ScrollText,
   Users,
+  Newspaper,
   Bell,
   ChevronDown,
   LogOut,
@@ -49,6 +50,17 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
         label: "Conflict Alerts",
         icon: ScrollText,
         hint: "Emergency response",
+      },
+    ],
+  },
+  {
+    title: "Publish",
+    items: [
+      {
+        to: "/portal/feed",
+        label: "Community Feed",
+        icon: Newspaper,
+        hint: "Compose mobile app news articles",
       },
     ],
   },

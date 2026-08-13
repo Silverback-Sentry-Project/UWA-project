@@ -17,6 +17,7 @@ class NewsArticle extends Model
         'title',
         'excerpt',
         'body',
+        'image_url',
         'category',
         'source',
         'read_time',

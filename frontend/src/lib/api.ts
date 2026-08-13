@@ -31,11 +31,17 @@ export class ApiError extends Error {
 export async function apiFetch<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
 
+  // FormData bodies (file uploads) must NOT get an explicit Content-Type - the browser sets
+  // "multipart/form-data; boundary=..." itself from the FormData instance, and forcing
+  // application/json here (as every JSON caller of this function needs) would corrupt the
+  // upload instead of just being redundant.
+  const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
+
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {
       Accept: "application/json",
-      "Content-Type": "application/json",
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options.headers as Record<string, string> | undefined),
     },

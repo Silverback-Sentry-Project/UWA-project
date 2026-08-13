@@ -82,6 +82,9 @@ Route::middleware(['auth:sanctum', 'warden_or_uwa'])->group(function () {
     Route::get('/news-articles', [NewsArticleController::class, 'index']);
     Route::post('/news-articles', [NewsArticleController::class, 'store']);
     Route::get('/news-articles/{newsArticle}', [NewsArticleController::class, 'show']);
+    Route::patch('/news-articles/{newsArticle}', [NewsArticleController::class, 'update']);
+    Route::delete('/news-articles/{newsArticle}', [NewsArticleController::class, 'destroy']);
+    Route::post('/news-articles/{newsArticle}/image', [NewsArticleController::class, 'uploadImage']);
 });
 
 // Compensation claims and cross-park forwarded-form review — cross-park,

@@ -2,7 +2,10 @@
 
 namespace App\Services;
 
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Str;
 use Kreait\Firebase\Contract\Auth;
+use Kreait\Firebase\Contract\Storage;
 use Kreait\Firebase\Factory;
 use Kreait\Firebase\Firestore;
 
@@ -13,6 +16,8 @@ class FirebaseService
     private ?Auth $auth = null;
 
     private ?Firestore $firestore = null;
+
+    private ?Storage $storage = null;
 
     /**
      * Built lazily (not in the constructor) so that a misconfigured/missing credential only
@@ -107,6 +112,43 @@ class FirebaseService
     public function firestore(): Firestore
     {
         return $this->firestore ??= $this->factory()->createFirestore();
+    }
+
+    public function storage(): Storage
+    {
+        return $this->storage ??= $this->factory()->createStorage();
+    }
+
+    /**
+     * Upload a feed-article header image to Firebase Storage and return a public,
+     * token-based download URL - the same URL format/mechanism the Firebase console's own
+     * "get download URL" produces, so it works via a plain AsyncImage/browser <img> fetch
+     * with no auth header, regardless of storage.rules (the upload itself goes through this
+     * Admin SDK call, which authenticates as the service account and bypasses storage.rules
+     * entirely - see storage.rules' own comment on the feed/ path for why "allow write: if
+     * false" there is accurate, not a bug).
+     */
+    public function uploadFeedImage(string $articleId, UploadedFile $file): string
+    {
+        $bucket = $this->storage()->getBucket();
+        $extension = $file->getClientOriginalExtension() ?: 'jpg';
+        $path = "feed/{$articleId}/".Str::uuid()->toString().'.'.$extension;
+        $token = Str::uuid()->toString();
+
+        $bucket->upload(
+            fopen($file->getRealPath(), 'r'),
+            [
+                'name' => $path,
+                'metadata' => [
+                    'contentType' => $file->getMimeType(),
+                    'metadata' => ['firebaseStorageDownloadTokens' => $token],
+                ],
+            ]
+        );
+
+        $encodedPath = rawurlencode($path);
+
+        return "https://firebasestorage.googleapis.com/v0/b/{$bucket->name()}/o/{$encodedPath}?alt=media&token={$token}";
     }
 
     /**
@@ -221,5 +263,18 @@ class FirebaseService
             ->collection('feed')
             ->document($firestoreDocId)
             ->set($payload, ['merge' => true]);
+    }
+
+    /**
+     * Remove a news article's Firestore mirror - used when a previously-published article is
+     * unpublished or deleted, so the mobile feed doesn't keep serving it after the portal no
+     * longer considers it live.
+     */
+    public function deleteFeedArticle(string $firestoreDocId): void
+    {
+        $this->firestore()->database()
+            ->collection('feed')
+            ->document($firestoreDocId)
+            ->delete();
     }
 }
