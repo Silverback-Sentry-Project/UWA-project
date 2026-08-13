@@ -4,14 +4,18 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\NewsArticle;
+use App\Services\CloudinaryService;
 use App\Services\FirebaseService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class NewsArticleController extends Controller
 {
-    public function __construct(private readonly FirebaseService $firebase)
-    {
+    public function __construct(
+        private readonly FirebaseService $firebase,
+        private readonly CloudinaryService $cloudinary,
+    ) {
     }
 
     // This whole controller sits behind auth:sanctum + warden_or_uwa (routes/api.php), so
@@ -80,10 +84,12 @@ class NewsArticleController extends Controller
         return response()->json(null, 204);
     }
 
-    // Proxied through Laravel (not a direct client->Firebase upload) so the same
-    // warden_or_uwa auth gate that protects every other write in this controller also
-    // protects who can push files into the feed/ Storage path - see FirebaseService::
-    // uploadFeedImage() and storage.rules' matching comment on why client writes are denied.
+    // Proxied through Laravel (not a direct client upload) so the same warden_or_uwa auth
+    // gate that protects every other write in this controller also protects who can push
+    // files in - see CloudinaryService::uploadFeedImage(). Was Firebase Storage originally;
+    // switched because that requires the Blaze plan and this project's Firebase project is
+    // on Spark, so no bucket was ever provisioned there (confirmed live: both possible
+    // default bucket names 404 from Firebase's own Storage REST API).
     public function uploadImage(Request $request, NewsArticle $newsArticle)
     {
         $validator = Validator::make($request->all(), [
@@ -94,7 +100,17 @@ class NewsArticleController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $url = $this->firebase->uploadFeedImage((string) $newsArticle->article_id, $request->file('image'));
+        try {
+            $url = $this->cloudinary->uploadFeedImage((string) $newsArticle->article_id, $request->file('image'));
+        } catch (\Throwable $e) {
+            Log::error('News article image upload failed: '.$e->getMessage());
+
+            return response()->json([
+                'message' => 'Image upload is unavailable - check Cloudinary configuration. '.
+                    'The article was saved without an image.',
+            ], 503);
+        }
+
         $newsArticle->update(['image_url' => $url]);
 
         return response()->json($newsArticle->fresh('author'));

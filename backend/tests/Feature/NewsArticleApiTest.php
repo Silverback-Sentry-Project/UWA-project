@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\NewsArticle;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\CloudinaryService;
 use App\Services\FirebaseService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -23,7 +24,10 @@ class NewsArticleApiTest extends TestCase
         $this->firebaseMock = $this->mock(FirebaseService::class, function ($mock) {
             $mock->shouldReceive('syncFeedArticle')->andReturnNull();
             $mock->shouldReceive('deleteFeedArticle')->andReturnNull();
-            $mock->shouldReceive('uploadFeedImage')->andReturn('https://firebasestorage.googleapis.com/v0/b/test/o/feed%2F1%2Ffake.jpg?alt=media&token=fake');
+        });
+
+        $this->mock(CloudinaryService::class, function ($mock) {
+            $mock->shouldReceive('uploadFeedImage')->andReturn('https://res.cloudinary.com/test/image/upload/feed/1/fake.jpg');
         });
     }
 
@@ -173,5 +177,31 @@ class NewsArticleApiTest extends TestCase
 
         $response->assertStatus(200);
         $this->assertNotNull($article->fresh()->image_url);
+    }
+
+    public function test_image_upload_failure_returns_a_clean_503_not_a_raw_500()
+    {
+        // Overrides setUp()'s default mock - simulates Cloudinary throwing (e.g. missing
+        // credentials, or the upload API rejecting the request).
+        $this->mock(CloudinaryService::class, function ($mock) {
+            $mock->shouldReceive('uploadFeedImage')->andThrow(new \RuntimeException('Cloudinary is not configured.'));
+        });
+
+        $token = $this->wardenToken();
+        $article = NewsArticle::create([
+            'title' => 'Article with image',
+            'excerpt' => 'Excerpt',
+            'category' => 'Wildlife Update',
+            'author_id' => User::first()->user_id,
+            'published' => true,
+            'published_at' => now(),
+        ]);
+
+        $response = $this->post("/api/news-articles/{$article->article_id}/image", [
+            'image' => UploadedFile::fake()->image('cover.jpg'),
+        ], ['Authorization' => "Bearer $token"]);
+
+        $response->assertStatus(503);
+        $this->assertNull($article->fresh()->image_url);
     }
 }

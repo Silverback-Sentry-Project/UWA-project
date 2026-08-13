@@ -76,3 +76,12 @@ services:
         value: "WildWatch"
       - key: RESEND_API_KEY
         sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false # feed-article header images (CloudinaryService) - all three Cloudinary
+        # keys come from the Cloudinary dashboard's main page after signup, no setup step
+        # needed. Not Firebase Storage: that requires the Blaze plan and this project's
+        # Firebase project is on Spark, so no bucket was ever provisioned there.
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
