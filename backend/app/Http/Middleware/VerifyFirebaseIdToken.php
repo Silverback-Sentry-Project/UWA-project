@@ -25,9 +25,7 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class VerifyFirebaseIdToken
 {
-    public function __construct(private readonly FirebaseService $firebase)
-    {
-    }
+    public function __construct(private readonly FirebaseService $firebase) {}
 
     public function handle(Request $request, Closure $next): Response
     {
@@ -38,8 +36,22 @@ class VerifyFirebaseIdToken
 
         $idToken = substr($header, 7);
 
+        // Split from the verifyIdToken() call below on purpose: building the Firebase client
+        // (FirebaseService::auth()) fails with a plain RuntimeException when credentials
+        // aren't configured for this environment - a server misconfiguration, not anything
+        // the caller did wrong, so it gets its own 503 rather than being folded into the
+        // "your token is bad" 401 below. Previously uncaught here entirely, this surfaced as
+        // a bare 500 on every mobile bridge call in production.
         try {
-            $verified = $this->firebase->auth()->verifyIdToken($idToken);
+            $auth = $this->firebase->auth();
+        } catch (\RuntimeException $e) {
+            report($e);
+
+            return response()->json(['message' => 'Firebase is not configured on this server.'], 503);
+        }
+
+        try {
+            $verified = $auth->verifyIdToken($idToken);
         } catch (FailedToVerifyToken $e) {
             return response()->json(['message' => 'Invalid or expired Firebase ID token.'], 401);
         }

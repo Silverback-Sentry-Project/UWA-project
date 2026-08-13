@@ -31,6 +31,7 @@ import { Route as PortalAuditRouteImport } from './routes/portal.audit'
 import { Route as PortalClaimsRouteImport } from './routes/portal.claims'
 import { Route as PortalConflictsRouteImport } from './routes/portal.conflicts'
 import { Route as PortalDashboardRouteImport } from './routes/portal.dashboard'
+import { Route as PortalFeedRouteImport } from './routes/portal.feed'
 import { Route as PortalFormsRouteImport } from './routes/portal.forms'
 import { Route as PortalHotspotsRouteImport } from './routes/portal.hotspots'
 import { Route as PortalIncidentsRouteImport } from './routes/portal.incidents'
@@ -154,6 +155,11 @@ const PortalDashboardRoute = PortalDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => PortalRoute,
 } as any)
+const PortalFeedRoute = PortalFeedRouteImport.update({
+  id: '/feed',
+  path: '/feed',
+  getParentRoute: () => PortalRoute,
+} as any)
 const PortalFormsRoute = PortalFormsRouteImport.update({
   id: '/forms',
   path: '/forms',
@@ -236,6 +242,7 @@ export interface FileRoutesByFullPath {
   '/portal/claims': typeof PortalClaimsRoute
   '/portal/conflicts': typeof PortalConflictsRoute
   '/portal/dashboard': typeof PortalDashboardRoute
+  '/portal/feed': typeof PortalFeedRoute
   '/portal/forms': typeof PortalFormsRoute
   '/portal/hotspots': typeof PortalHotspotsRoute
   '/portal/incidents': typeof PortalIncidentsRoute
@@ -269,6 +276,7 @@ export interface FileRoutesByTo {
   '/portal/claims': typeof PortalClaimsRoute
   '/portal/conflicts': typeof PortalConflictsRoute
   '/portal/dashboard': typeof PortalDashboardRoute
+  '/portal/feed': typeof PortalFeedRoute
   '/portal/forms': typeof PortalFormsRoute
   '/portal/hotspots': typeof PortalHotspotsRoute
   '/portal/incidents': typeof PortalIncidentsRoute
@@ -306,6 +314,7 @@ export interface FileRoutesById {
   '/portal/claims': typeof PortalClaimsRoute
   '/portal/conflicts': typeof PortalConflictsRoute
   '/portal/dashboard': typeof PortalDashboardRoute
+  '/portal/feed': typeof PortalFeedRoute
   '/portal/forms': typeof PortalFormsRoute
   '/portal/hotspots': typeof PortalHotspotsRoute
   '/portal/incidents': typeof PortalIncidentsRoute
@@ -344,6 +353,7 @@ export interface FileRouteTypes {
     | '/portal/claims'
     | '/portal/conflicts'
     | '/portal/dashboard'
+    | '/portal/feed'
     | '/portal/forms'
     | '/portal/hotspots'
     | '/portal/incidents'
@@ -377,6 +387,7 @@ export interface FileRouteTypes {
     | '/portal/claims'
     | '/portal/conflicts'
     | '/portal/dashboard'
+    | '/portal/feed'
     | '/portal/forms'
     | '/portal/hotspots'
     | '/portal/incidents'
@@ -413,6 +424,7 @@ export interface FileRouteTypes {
     | '/portal/claims'
     | '/portal/conflicts'
     | '/portal/dashboard'
+    | '/portal/feed'
     | '/portal/forms'
     | '/portal/hotspots'
     | '/portal/incidents'
@@ -594,6 +606,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalDashboardRouteImport
       parentRoute: typeof PortalRoute
     }
+    '/portal/feed': {
+      id: '/portal/feed'
+      path: '/feed'
+      fullPath: '/portal/feed'
+      preLoaderRoute: typeof PortalFeedRouteImport
+      parentRoute: typeof PortalRoute
+    }
     '/portal/forms': {
       id: '/portal/forms'
       path: '/forms'
@@ -717,6 +736,7 @@ interface PortalRouteChildren {
   PortalClaimsRoute: typeof PortalClaimsRoute
   PortalConflictsRoute: typeof PortalConflictsRoute
   PortalDashboardRoute: typeof PortalDashboardRoute
+  PortalFeedRoute: typeof PortalFeedRoute
   PortalFormsRoute: typeof PortalFormsRoute
   PortalHotspotsRoute: typeof PortalHotspotsRoute
   PortalIncidentsRoute: typeof PortalIncidentsRoute
@@ -733,6 +753,7 @@ const PortalRouteChildren: PortalRouteChildren = {
   PortalClaimsRoute: PortalClaimsRoute,
   PortalConflictsRoute: PortalConflictsRoute,
   PortalDashboardRoute: PortalDashboardRoute,
+  PortalFeedRoute: PortalFeedRoute,
   PortalFormsRoute: PortalFormsRoute,
   PortalHotspotsRoute: PortalHotspotsRoute,
   PortalIncidentsRoute: PortalIncidentsRoute,

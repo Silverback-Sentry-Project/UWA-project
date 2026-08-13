@@ -20,8 +20,11 @@ class GameparkApiTest extends TestCase
     use RefreshDatabase;
 
     private Park $park;
+
     private Park $otherPark;
+
     private User $gamepark;
+
     private string $gameparkToken;
 
     protected function setUp(): void
@@ -85,7 +88,7 @@ class GameparkApiTest extends TestCase
 
     public function test_non_gamepark_account_is_forbidden_from_gamepark_forms()
     {
-        $response = $this->getJson('/api/gamepark/forms', ['Authorization' => 'Bearer ' . $this->adminToken()]);
+        $response = $this->getJson('/api/gamepark/forms', ['Authorization' => 'Bearer '.$this->adminToken()]);
 
         $response->assertStatus(403);
     }
@@ -234,14 +237,14 @@ class GameparkApiTest extends TestCase
         $response = $this->postJson('/api/gamepark/personnel/invite', [
             'first_name' => 'New',
             'last_name' => 'Ranger',
-            'email' => 'new-ranger@example.com',
+            'email' => 'new.ranger@gmail.com',
             'role_id' => $rangerRoleId,
         ], ['Authorization' => "Bearer $this->gameparkToken"]);
 
         $response->assertStatus(201);
         $this->assertTrue($response->json('mail_sent'));
         $this->assertDatabaseHas('users', [
-            'email' => 'new-ranger@example.com',
+            'email' => 'new.ranger@gmail.com',
             'park_id' => $this->park->park_id,
             'firebase_uid' => 'mock-firebase-uid',
         ]);

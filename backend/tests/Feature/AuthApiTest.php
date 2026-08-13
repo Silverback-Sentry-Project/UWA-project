@@ -6,6 +6,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class AuthApiTest extends TestCase
@@ -68,6 +69,47 @@ class AuthApiTest extends TestCase
         ]);
 
         $response->assertStatus(403);
+    }
+
+    /**
+     * Regression test for a real production bug: Park Warden and Gamepark Officer could
+     * never log into the portal at all, even though EnsureAdmin (guarding the dashboard,
+     * incidents, and users routes) explicitly admits both roles, and warden_or_uwa/gamepark
+     * middleware exist specifically to serve routes built for them. AuthController::login
+     * used to check only isAdmin()/UWA Official, silently narrower than what the routes it
+     * gates actually intended - see User::canAccessPortal(), now the single source of truth
+     * both places read from.
+     */
+    #[DataProvider('portalEligibleRoleProvider')]
+    public function test_portal_eligible_roles_can_login(string $roleName)
+    {
+        $role = Role::create(['role_name' => $roleName]);
+        $user = User::create([
+            'first_name' => 'Test',
+            'last_name' => 'User',
+            'email' => 'portal-user@example.com',
+            'password_hash' => Hash::make('password123'),
+            'account_status' => 'Active',
+        ]);
+        $user->roles()->attach($role->role_id);
+
+        $response = $this->postJson('/api/login', [
+            'email' => 'portal-user@example.com',
+            'password' => 'password123',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonStructure(['token', 'user' => ['user_id', 'full_name', 'email', 'roles']]);
+    }
+
+    public static function portalEligibleRoleProvider(): array
+    {
+        return [
+            'System Administrator' => ['System Administrator'],
+            'UWA Official' => ['UWA Official'],
+            'Park Warden' => ['Park Warden'],
+            'Gamepark Officer' => ['Gamepark Officer'],
+        ];
     }
 
     public function test_login_is_rate_limited_after_repeated_failures()

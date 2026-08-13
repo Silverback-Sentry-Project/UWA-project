@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { PortalShell } from "@/components/portal/PortalShell";
+import { PortalShell, StatusBadge } from "@/components/portal/PortalShell";
 import { apiFetch, ApiError } from "@/lib/api";
 import type { Paginated } from "@/lib/api-types";
-import { ShieldCheck, KeyRound, UserPlus } from "lucide-react";
+import { ShieldCheck, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { usePark } from "@/lib/park-context";
 
@@ -129,7 +129,7 @@ function Personnel() {
         </button>
       }
     >
-      <div className="grid grid-cols-3 gap-4 mb-4">
+      <div className="grid grid-cols-2 gap-4 mb-4">
         <div className="portal-card p-4">
           <div className="flex items-center gap-2 text-[var(--p-olive-deep)]">
             <ShieldCheck size={16} />
@@ -139,16 +139,6 @@ function Personnel() {
           </div>
           <div className="mt-2 portal-display text-2xl font-bold">{active}</div>
           <div className="text-[11px] text-[var(--p-ink-soft)]">of {people.length} shown</div>
-        </div>
-        <div className="portal-card p-4">
-          <div className="flex items-center gap-2 text-[var(--p-olive-deep)]">
-            <KeyRound size={16} />
-            <span className="text-[12px] font-semibold uppercase tracking-wider">
-              Session policy
-            </span>
-          </div>
-          <div className="mt-2 portal-display text-2xl font-bold">Token-based</div>
-          <div className="text-[11px] text-[var(--p-ink-soft)]">Sanctum bearer tokens</div>
         </div>
         <div className="portal-card p-4">
           <div className="flex items-center gap-2 text-[var(--p-olive-deep)]">

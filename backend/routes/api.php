@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\EvidenceFormSubmissionController;
 use App\Http\Controllers\Api\ForwardedFormController;
 use App\Http\Controllers\Api\IncidentController;
 use App\Http\Controllers\Api\NewsArticleController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ParkController;
 use App\Http\Controllers\Api\RangerController;
 use App\Http\Controllers\Api\RoleController;
@@ -71,6 +72,9 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::post('/users/invite', [UserController::class, 'invite']);
     Route::get('/users/{user}', [UserController::class, 'show']);
     Route::patch('/users/{user}', [UserController::class, 'update']);
+
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markRead']);
 });
 
 // News feed authoring — Park Warden / UWA Official only
@@ -78,6 +82,9 @@ Route::middleware(['auth:sanctum', 'warden_or_uwa'])->group(function () {
     Route::get('/news-articles', [NewsArticleController::class, 'index']);
     Route::post('/news-articles', [NewsArticleController::class, 'store']);
     Route::get('/news-articles/{newsArticle}', [NewsArticleController::class, 'show']);
+    Route::patch('/news-articles/{newsArticle}', [NewsArticleController::class, 'update']);
+    Route::delete('/news-articles/{newsArticle}', [NewsArticleController::class, 'destroy']);
+    Route::post('/news-articles/{newsArticle}/image', [NewsArticleController::class, 'uploadImage']);
 });
 
 // Compensation claims and cross-park forwarded-form review — cross-park,

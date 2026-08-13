@@ -1,0 +1,56 @@
+name: Frontend build + deploy
+
+# Typechecks and builds the TanStack Start portal, then deploys the prebuilt
+# Worker to Cloudflare via `nitro deploy --prebuilt` (the exact command the
+# project's own build output already recommends - see vite.config.ts's Nitro
+# Cloudflare preset). Gated behind a clean typecheck/build, same reasoning as
+# backend-deploy.yml's test-before-deploy gate.
+#
+# Required repo secrets (Settings -> Secrets and variables -> Actions):
+#   CLOUDFLARE_API_TOKEN - a Cloudflare API token scoped to Workers Scripts
+#     Edit (and Account Settings Read) for this account. Create one at
+#     https://dash.cloudflare.com/profile/api-tokens
+#   CLOUDFLARE_ACCOUNT_ID - the Cloudflare account ID (dashboard sidebar).
+
+on:
+  push:
+    branches: [cleanup/aug-2026]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/frontend-deploy.yml"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Deploy to Cloudflare
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "CLOUDFLARE_API_TOKEN not set - skipping deploy. Build/typecheck still ran and reported pass/fail."
+            exit 0
+          fi
+          npx nitro deploy --prebuilt

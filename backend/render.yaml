@@ -61,6 +61,13 @@ services:
         sync: false # same origin as FRONTEND_URL
       - key: FIREBASE_BRIDGE_SECRET
         sync: false # must match the real Firebase project's Cloud Functions config exactly
+      - key: FIREBASE_CREDENTIALS_JSON
+        sync: false # REQUIRED - the full service-account JSON (Firebase Console -> Project
+        # Settings -> Service accounts -> Generate new private key), pasted verbatim as this
+        # single env var's value. Without it, FirebaseService::factory() throws and every
+        # endpoint that touches Firebase (mobile bridge, ranger invite, portal->Firestore
+        # sync) returns a 503 - confirmed as the root cause of every /api/mobile/* call
+        # 500ing in production before this env var existed at all. See FirebaseService.php.
       - key: MAIL_MAILER
         value: resend
       - key: MAIL_FROM_ADDRESS

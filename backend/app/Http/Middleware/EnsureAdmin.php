@@ -12,15 +12,7 @@ class EnsureAdmin
     {
         $user = $request->user();
 
-        if (
-            ! $user
-            || ! (
-                $user->isAdmin()
-                || $user->hasRole('UWA Official')
-                || $user->hasRole('Park Warden')
-                || $user->hasRole('Gamepark Officer')
-            )
-        ) {
+        if (! $user || ! $user->canAccessPortal()) {
             return response()->json([
                 'message' => 'Forbidden. This portal is restricted to authorized personnel.',
             ], 403);

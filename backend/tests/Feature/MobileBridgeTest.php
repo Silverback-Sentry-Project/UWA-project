@@ -55,6 +55,27 @@ class MobileBridgeTest extends TestCase
         $this->assertDatabaseCount('incidents', 0);
     }
 
+    public function test_mobile_incident_call_returns_503_when_firebase_is_not_configured(): void
+    {
+        // Regression test for a real production bug: FirebaseService::auth() throws a plain
+        // RuntimeException when no credentials are configured for this environment (see
+        // FirebaseService::factory()). Before this was split into its own try/catch in
+        // VerifyFirebaseIdToken, that exception was uncaught and every mobile bridge call
+        // 500'd unconditionally on the hosted API, which had no FIREBASE_CREDENTIALS_JSON set.
+        $this->mock(FirebaseService::class, function ($mock) {
+            $mock->shouldReceive('auth')->andThrow(new \RuntimeException('Firebase credentials are not configured.'));
+        });
+
+        $response = $this->postJson('/api/mobile/incidents', [
+            'docId' => 'inc-1',
+            'eventType' => 'create',
+            'after' => $this->sampleIncidentPayload(),
+        ], ['Authorization' => 'Bearer some-token']);
+
+        $response->assertStatus(503);
+        $this->assertDatabaseCount('incidents', 0);
+    }
+
     public function test_mobile_incident_call_upserts_with_valid_token(): void
     {
         $this->seedBridgePrerequisites();
