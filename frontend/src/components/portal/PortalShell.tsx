@@ -7,7 +7,7 @@ import {
   Flame,
   UserCheck,
   ScrollText,
-  Settings,
+  Users,
   Bell,
   ChevronDown,
   LogOut,
@@ -49,6 +49,23 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
         label: "Conflict Alerts",
         icon: ScrollText,
         hint: "Emergency response",
+      },
+    ],
+  },
+  {
+    title: "Manage",
+    items: [
+      {
+        // Route is still named /portal/settings (its file-based route path), but the page
+        // itself is entirely personnel management (invite staff, browse accounts by
+        // park/role) - was previously only reachable via a generic, easy-to-miss "Settings"
+        // gear icon at the very bottom of the sidebar, separate from the rest of the nav.
+        // Surfaced properly here since that's what a warden/UWA official actually comes
+        // here to do.
+        to: "/portal/settings",
+        label: "Personnel",
+        icon: Users,
+        hint: "Manage accounts & invite staff",
       },
     ],
   },
@@ -176,14 +193,6 @@ export function PortalShell({
           ))}
         </nav>
         <div className="border-t border-white/5 p-4 space-y-2 bg-black/10">
-          <Link
-            to="/portal/settings"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium text-white/50 hover:bg-white/5 hover:text-white transition-all"
-          >
-            <Settings size={18} className="text-white/30" />
-            <span>Settings</span>
-          </Link>
-
           <button
             onClick={handleSignOut}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium text-[#FF8A80] hover:bg-white/5 transition-all"
