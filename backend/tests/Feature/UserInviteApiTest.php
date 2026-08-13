@@ -218,6 +218,38 @@ class UserInviteApiTest extends TestCase
         Mail::assertNothingSent();
     }
 
+    /**
+     * Regression test for a real production bug: a Firebase provisioning failure used to
+     * propagate past this controller entirely as an uncaught exception, producing a raw,
+     * undiagnosable 500 with no useful message. Confirmed live and root-caused to
+     * FirebaseService::provisionMobileAccount() leaving an orphaned Firebase Auth user on
+     * partial failure, which made every retry with that email fail forever - see
+     * FirebaseServiceTest and provisionMobileAccount()'s own cleanup fix. This test covers
+     * the controller half: the failure is now caught and returns a clean, informative
+     * message instead of whatever Laravel's default exception handler would produce.
+     */
+    public function test_firebase_provisioning_failure_returns_a_clean_error_message()
+    {
+        Mail::fake();
+        $this->mock(FirebaseService::class, function ($mock) {
+            $mock->shouldReceive('provisionMobileAccount')->andThrow(new \RuntimeException('Firebase unreachable'));
+        });
+
+        $roleId = Role::where('role_name', 'Park Warden')->value('role_id');
+
+        $response = $this->postJson('/api/users/invite', [
+            'first_name' => 'Also',
+            'last_name' => 'Doomed',
+            'email' => 'also-doomed@example.com',
+            'role_id' => $roleId,
+        ], ['Authorization' => "Bearer $this->adminToken"]);
+
+        $response->assertStatus(500);
+        $response->assertJson([
+            'message' => 'Could not create the mobile account for this email. Please try again.',
+        ]);
+    }
+
     public function test_invite_fails_when_email_already_taken()
     {
         Mail::fake();

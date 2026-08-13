@@ -199,7 +199,57 @@ class UserController extends Controller
             ], 422);
         }
 
-        $user = DB::transaction(function () use ($firstName, $lastName, $email, $temporaryPassword, $roleId, $parkId, $mobileRole) {
+        try {
+            $user = $this->createInvitedUser($firstName, $lastName, $email, $temporaryPassword, $roleId, $parkId, $mobileRole);
+        } catch (\RuntimeException $e) {
+            // Previously uncaught here entirely - propagated past this controller as a raw,
+            // undiagnosable 500. Firebase provisioning is now also self-cleaning (see
+            // FirebaseService::provisionMobileAccount()), so a retry with the same email
+            // can actually succeed instead of failing on a duplicate-email error forever.
+            Log::error('Personnel invite failed: '.$e->getMessage());
+
+            return response()->json([
+                'message' => 'Could not create the mobile account for this email. Please try again.',
+            ], 500);
+        }
+
+        $user->load(['roles', 'park']);
+        $portalUrl = rtrim(env('FRONTEND_URL', 'http://localhost:5173'), '/').'/portal';
+
+        $mailSent = true;
+        $mailError = null;
+        try {
+            Mail::to($user->email)->send(new PersonnelInviteMail(
+                recipientName: $user->first_name,
+                recipientEmail: $user->email,
+                temporaryPassword: $temporaryPassword,
+                roleName: $roleName,
+                portalUrl: $portalUrl,
+                parkName: $user->park?->park_name,
+                hasMobileAccount: $mobileRole !== null,
+            ));
+        } catch (\Throwable $e) {
+            $mailSent = false;
+            $mailError = $e->getMessage();
+            Log::warning('Personnel invite email failed to send: '.$mailError);
+        }
+
+        return response()->json([
+            'user' => $user,
+            'mail_sent' => $mailSent,
+            'message' => $mailSent
+                ? ($mobileRole !== null
+                    ? 'Invitation email sent — they can sign in to the WildWatch mobile app with this email.'
+                    : 'Invitation email sent.')
+                : 'Account created, but the invite email could not be sent — check the mail configuration.',
+            // Only surfaced when APP_DEBUG=true, to help diagnose a broken mail gateway without leaking details in production.
+            'mail_error' => (! $mailSent && config('app.debug')) ? $mailError : null,
+        ], 201);
+    }
+
+    private function createInvitedUser(string $firstName, string $lastName, string $email, string $temporaryPassword, int $roleId, ?int $parkId, ?string $mobileRole): User
+    {
+        return DB::transaction(function () use ($firstName, $lastName, $email, $temporaryPassword, $roleId, $parkId, $mobileRole) {
             $user = User::create([
                 'first_name' => $firstName,
                 'last_name' => $lastName,
@@ -236,38 +286,5 @@ class UserController extends Controller
 
             return $user;
         });
-
-        $user->load(['roles', 'park']);
-        $portalUrl = rtrim(env('FRONTEND_URL', 'http://localhost:5173'), '/').'/portal';
-
-        $mailSent = true;
-        $mailError = null;
-        try {
-            Mail::to($user->email)->send(new PersonnelInviteMail(
-                recipientName: $user->first_name,
-                recipientEmail: $user->email,
-                temporaryPassword: $temporaryPassword,
-                roleName: $roleName,
-                portalUrl: $portalUrl,
-                parkName: $user->park?->park_name,
-                hasMobileAccount: $mobileRole !== null,
-            ));
-        } catch (\Throwable $e) {
-            $mailSent = false;
-            $mailError = $e->getMessage();
-            Log::warning('Personnel invite email failed to send: '.$mailError);
-        }
-
-        return response()->json([
-            'user' => $user,
-            'mail_sent' => $mailSent,
-            'message' => $mailSent
-                ? ($mobileRole !== null
-                    ? 'Invitation email sent — they can sign in to the WildWatch mobile app with this email.'
-                    : 'Invitation email sent.')
-                : 'Account created, but the invite email could not be sent — check the mail configuration.',
-            // Only surfaced when APP_DEBUG=true, to help diagnose a broken mail gateway without leaking details in production.
-            'mail_error' => (! $mailSent && config('app.debug')) ? $mailError : null,
-        ], 201);
     }
 }

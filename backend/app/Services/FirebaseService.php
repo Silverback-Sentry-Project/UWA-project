@@ -133,22 +133,38 @@ class FirebaseService
 
         $uid = $userRecord->uid;
 
-        // 2. Set Custom Claims
-        $this->auth()->setCustomUserClaims($uid, [
-            'role' => $role,
-            'park_id' => $parkFirestoreId,
-        ]);
+        // Steps 2-3 are wrapped separately from step 1: if either fails, the just-created
+        // Auth user is deleted before re-throwing. Previously a failure here left an
+        // orphaned Firebase Auth account with this email and no matching Laravel row (the
+        // DB transaction the caller wraps this in rolls back) - every retry then failed
+        // createUser() with a duplicate-email error, forever, as an uncaught exception -
+        // confirmed live as a real intermittent 500 on /users/invite.
+        try {
+            // 2. Set Custom Claims
+            $this->auth()->setCustomUserClaims($uid, [
+                'role' => $role,
+                'park_id' => $parkFirestoreId,
+            ]);
 
-        // 3. Create Shadow Document in Firestore
-        $this->firestore()->database()->collection('users')->document($uid)->set([
-            'uid' => $uid,
-            'email' => $email,
-            'displayName' => $displayName,
-            'role' => $role,
-            'park_id' => $parkFirestoreId,
-            'source_system' => 'laravel',
-            'created_at' => new \DateTime,
-        ]);
+            // 3. Create Shadow Document in Firestore
+            $this->firestore()->database()->collection('users')->document($uid)->set([
+                'uid' => $uid,
+                'email' => $email,
+                'displayName' => $displayName,
+                'role' => $role,
+                'park_id' => $parkFirestoreId,
+                'source_system' => 'laravel',
+                'created_at' => new \DateTime,
+            ]);
+        } catch (\Throwable $e) {
+            try {
+                $this->auth()->deleteUser($uid);
+            } catch (\Throwable) {
+                // Best-effort cleanup - the original exception below is what matters.
+            }
+
+            throw $e;
+        }
 
         return $uid;
     }
