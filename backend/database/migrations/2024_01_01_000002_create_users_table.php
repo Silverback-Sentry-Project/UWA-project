@@ -23,9 +23,18 @@ return new class extends Migration
             $table->timestamp('created_at')->useCurrent();
         });
 
-        // Mirrors the CHECK (phone_number IS NOT NULL OR email IS NOT NULL) constraint
-        // from the source SQL script. MySQL 8.0.16+ enforces CHECK constraints.
-        DB::statement('ALTER TABLE users ADD CONSTRAINT chk_contact_method CHECK (phone_number IS NOT NULL OR email IS NOT NULL)');
+        // Mirrors the CHECK (phone_number IS NOT NULL OR email IS NOT NULL) constraint from the
+        // source SQL script. Supported by both MySQL 8.0.16+ and Postgres (the real production
+        // driver via Neon - see HOSTED-CUTOVER-PLAN.md) using this exact syntax, but not by the
+        // SQLite version PHP 8.4 ships with (the test suite's driver - phpunit.xml), which
+        // rejects ALTER TABLE ... ADD CONSTRAINT outright. This previously went unnoticed
+        // locally only because this machine happens to have an unusually new system sqlite3
+        // that tolerates it - confirmed by testing the same statement directly against both.
+        // Skipped rather than adapted for SQLite, since it has no post-creation CHECK-constraint
+        // equivalent and no test relies on this rule being DB-enforced.
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement('ALTER TABLE users ADD CONSTRAINT chk_contact_method CHECK (phone_number IS NOT NULL OR email IS NOT NULL)');
+        }
     }
 
     public function down(): void
