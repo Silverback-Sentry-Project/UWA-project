@@ -17,7 +17,10 @@ name: Backend test + deploy
 
 on:
   push:
-    branches: [cleanup/aug-2026]
+    # cleanup/aug-2026 is the active working branch (PRs #4 and #5 both merged it into
+    # main); main is included too so a push there - direct or via a future PR merge -
+    # doesn't silently stop deploying just because work happens to land there instead.
+    branches: [cleanup/aug-2026, main]
     paths:
       - "backend/**"
       - ".github/workflows/backend-deploy.yml"

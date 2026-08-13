@@ -14,7 +14,9 @@ name: Frontend build + deploy
 
 on:
   push:
-    branches: [cleanup/aug-2026]
+    # See backend-deploy.yml's comment on the same choice - cleanup/aug-2026 is the
+    # active branch, main is included so it doesn't stop deploying if work lands there.
+    branches: [cleanup/aug-2026, main]
     paths:
       - "frontend/**"
       - ".github/workflows/frontend-deploy.yml"
