@@ -28,6 +28,12 @@ The feature test suite runs against an in-memory SQLite database and does not re
 
 ## The bridge webhooks
 
-Webhook routes under `/api/webhooks/` are authenticated by an HMAC signature header rather than Sanctum — `FIREBASE_BRIDGE_SECRET` must match the value configured on the Firebase Functions side exactly, in every environment. See `../BRIDGE-CONTRACT.md` for the full contract: which fields map to which, which system is authoritative for what, and how echo prevention keeps a webhook-originated write from bouncing back out as a second webhook call.
+Webhook routes under `/api/webhooks/` are authenticated by an HMAC signature header rather than Sanctum — `FIREBASE_BRIDGE_SECRET` must match the value configured on the Firebase Functions side exactly, in every environment. Routes under `/api/mobile/` instead authenticate via a Firebase ID token (the live Firebase project is on the Spark plan and can't run the Cloud Function that would otherwise sign HMAC webhook calls, so the mobile app calls Laravel directly). See `../BRIDGE-CONTRACT.md` for the full contract: which fields map to which, which system is authoritative for what, and how echo prevention keeps a webhook-originated write from bouncing back out as a second webhook call.
 
 A Postman collection covering this API's full route surface, including example request bodies and a self-signing setup for the webhook routes, is at `wildwatch.json` in this directory's root.
+
+## CI/CD and recent schema changes
+
+`../.github/workflows/backend-deploy.yml` runs `vendor/bin/phpunit` on every push (to `cleanup/aug-2026` or `main`, path-filtered to `backend/**`) and pings a Render deploy hook on success — see the root `web-portal/README.md` for the full CI/CD picture including the frontend side.
+
+The Neon schema was cleaned up 2026-08-13: 8 confirmed-dead tables dropped via a reversible migration (`incident_routes`, `reports`, `community_feedback`, plus the unused Laravel cache/queue scaffolding tables — `CACHE_STORE=file` and `QUEUE_CONNECTION=sync` in production, no `ShouldQueue` class exists anywhere). `news_articles` gained `image_url` the same day, along with real update/destroy/image-upload endpoints (previously only create/read existed despite the model/observer being fully built) — see `../BRIDGE-CONTRACT.md`'s "Community feed" and "Database schema cleanup" sections for the full detail.
