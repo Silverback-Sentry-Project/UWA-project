@@ -1,0 +1,61 @@
+name: Backend test + deploy
+
+# Render's own GitHub integration already auto-deploys this service on push
+# (see render.yaml) - what that doesn't give you is a gate: it'll happily
+# deploy a commit that fails the test suite. This workflow adds that gate by
+# running vendor/bin/phpunit first and only pinging Render's deploy hook on
+# success, rather than replacing Render's native deploy mechanism.
+#
+# Required repo secret (Settings -> Secrets and variables -> Actions):
+#   RENDER_DEPLOY_HOOK_URL - from the Render dashboard: the wildwatch-api
+#     service -> Settings -> Deploy Hook. Treat it like a credential (anyone
+#     with the URL can trigger a deploy).
+#
+# If you'd rather rely solely on Render's native auto-deploy and skip this
+# gate, turn this workflow's deploy step off by leaving the secret unset -
+# the test job still runs and reports pass/fail either way.
+
+on:
+  push:
+    branches: [cleanup/aug-2026]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-deploy.yml"
+
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: pdo, pdo_sqlite, sqlite3, pdo_pgsql, bcmath, sodium, gd, mbstring, iconv
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Prepare test env
+        run: |
+          cp .env.example .env
+          php artisan key:generate --force
+
+      - name: Run tests
+        run: vendor/bin/phpunit
+
+      - name: Trigger Render deploy
+        if: success()
+        env:
+          DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$DEPLOY_HOOK" ]; then
+            echo "RENDER_DEPLOY_HOOK_URL not set - skipping explicit deploy trigger (Render's native auto-deploy, if enabled, still applies)."
+            exit 0
+          fi
+          curl -fsS -X POST "$DEPLOY_HOOK"
