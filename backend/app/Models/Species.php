@@ -10,5 +10,5 @@ class Species extends Model
     protected $primaryKey = 'species_id';
     public $timestamps = false;
 
-    protected $fillable = ['common_name', 'scientific_name', 'conservation_status'];
+    protected $fillable = ['common_name', 'scientific_name', 'conservation_status', 'confidence', 'last_verified_at'];
 }
