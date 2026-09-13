@@ -10,11 +10,13 @@ class Incident extends Model
     use SoftDeletes;
 
     protected $table = 'incidents';
+
     protected $primaryKey = 'incident_id';
+
     public $timestamps = false;
 
     protected $fillable = [
-        'reported_by', 'park_id', 'incident_type', 'description',
+        'reported_by', 'park_id', 'incident_type', 'severity', 'description',
         'latitude', 'longitude', 'village', 'district', 'sub_county', 'parish',
         'status', 'is_escalated', 'firestore_doc_id', 'source_system', 'deleted_by',
     ];
