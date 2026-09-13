@@ -72,6 +72,31 @@ class NewsArticleApiTest extends TestCase
         $this->assertDatabaseHas('news_articles', ['title' => 'New Elephant Herd Spotted']);
     }
 
+    public function test_warden_can_publish_article_with_any_mobile_theme()
+    {
+        // Regression for the theme-enum narrowing: validation has always accepted the five
+        // mobile ArticleTheme values but the DB column only ever allowed FOREST/WILDLIFE/
+        // SECURITY, so SUNSET/SKY 500'd on the real Postgres CHECK/enum. The widening
+        // migration (2026_09_13_000002) converts the column to a plain varchar. This runs
+        // against SQLite in the test suite, exercising that conversion path.
+        foreach (['FOREST', 'WILDLIFE', 'SECURITY', 'SUNSET', 'SKY'] as $theme) {
+            $token = $this->wardenToken();
+
+            $response = $this->postJson('/api/news-articles', [
+                'title' => "Theme {$theme} Article",
+                'content' => 'Body for '.$theme,
+                'excerpt' => 'Excerpt for '.$theme,
+                'category' => 'Wildlife Update',
+                'theme' => $theme,
+            ], [
+                'Authorization' => "Bearer $token",
+            ]);
+
+            $response->assertStatus(201);
+            $this->assertDatabaseHas('news_articles', ['theme' => $theme]);
+        }
+    }
+
     public function test_regular_admin_cannot_create_news_article()
     {
         $role = Role::create(['role_name' => 'System Administrator']);
@@ -172,11 +197,64 @@ class NewsArticleApiTest extends TestCase
         ]);
 
         $response = $this->post("/api/news-articles/{$article->article_id}/image", [
-            'image' => UploadedFile::fake()->image('cover.jpg'),
+            'image' => UploadedFile::fake()->create('cover.jpg', 10, 'image/jpeg'),
         ], ['Authorization' => "Bearer $token"]);
 
         $response->assertStatus(200);
         $this->assertNotNull($article->fresh()->image_url);
+    }
+
+    public function test_warden_image_upload_registers_media_with_derived_renditions()
+    {
+        $token = $this->wardenToken();
+        $article = NewsArticle::create([
+            'title' => 'Article with image',
+            'excerpt' => 'Excerpt',
+            'category' => 'Wildlife Update',
+            'author_id' => User::first()->user_id,
+            'published' => true,
+            'published_at' => now(),
+        ]);
+
+        $response = $this->post("/api/news-articles/{$article->article_id}/image", [
+            'image' => UploadedFile::fake()->create('cover.jpg', 10, 'image/jpeg'),
+        ], ['Authorization' => "Bearer $token"]);
+
+        $response->assertStatus(200);
+
+        $this->assertDatabaseHas('media_registry', [
+            'owner_type' => NewsArticle::class,
+            'owner_id' => $article->article_id,
+            'original_url' => 'https://res.cloudinary.com/test/image/upload/feed/1/fake.jpg',
+            'thumbnail_url' => 'https://res.cloudinary.com/test/image/upload/w_300,f_auto,q_auto/feed/1/fake.jpg',
+            'preview_url' => 'https://res.cloudinary.com/test/image/upload/w_800,f_auto,q_auto/feed/1/fake.jpg',
+        ]);
+    }
+
+    public function test_deleting_an_article_soft_deletes_its_registered_renditions()
+    {
+        $token = $this->wardenToken();
+        $article = NewsArticle::create([
+            'title' => 'With image',
+            'excerpt' => 'Excerpt',
+            'category' => 'Wildlife Update',
+            'author_id' => User::first()->user_id,
+            'published' => true,
+            'published_at' => now(),
+        ]);
+
+        $this->post("/api/news-articles/{$article->article_id}/image", [
+            'image' => UploadedFile::fake()->create('cover.jpg', 10, 'image/jpeg'),
+        ], ['Authorization' => "Bearer $token"])->assertStatus(200);
+
+        $this->deleteJson("/api/news-articles/{$article->article_id}", [], [
+            'Authorization' => "Bearer $token",
+        ])->assertStatus(204);
+
+        $this->assertSoftDeleted('media_registry', [
+            'owner_type' => NewsArticle::class,
+            'owner_id' => $article->article_id,
+        ]);
     }
 
     public function test_image_upload_failure_returns_a_clean_503_not_a_raw_500()
@@ -198,7 +276,7 @@ class NewsArticleApiTest extends TestCase
         ]);
 
         $response = $this->post("/api/news-articles/{$article->article_id}/image", [
-            'image' => UploadedFile::fake()->image('cover.jpg'),
+            'image' => UploadedFile::fake()->create('cover.jpg', 10, 'image/jpeg'),
         ], ['Authorization' => "Bearer $token"]);
 
         $response->assertStatus(503);

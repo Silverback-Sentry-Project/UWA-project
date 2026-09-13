@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\MediaRegistry;
 use App\Models\NewsArticle;
 use App\Services\CloudinaryService;
 use App\Services\FirebaseService;
+use App\Services\MediaRenditionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -15,6 +17,7 @@ class NewsArticleController extends Controller
     public function __construct(
         private readonly FirebaseService $firebase,
         private readonly CloudinaryService $cloudinary,
+        private readonly MediaRenditionService $renditions,
     ) {
     }
 
@@ -77,8 +80,17 @@ class NewsArticleController extends Controller
         return response()->json($newsArticle->fresh('author'));
     }
 
-    public function destroy(NewsArticle $newsArticle)
+    public function destroy(Request $request, NewsArticle $newsArticle)
     {
+        // Cascade a soft delete to the article's registered renditions so a removed
+        // article no longer keeps derived thumbnails/previews alive in the registry.
+        MediaRegistry::where('owner_type', NewsArticle::class)
+            ->where('owner_id', $newsArticle->article_id)
+            ->update(['deleted_by' => $request->user()->user_id]);
+        MediaRegistry::where('owner_type', NewsArticle::class)
+            ->where('owner_id', $newsArticle->article_id)
+            ->delete();
+
         $newsArticle->delete();
 
         return response()->json(null, 204);
@@ -112,6 +124,11 @@ class NewsArticleController extends Controller
         }
 
         $newsArticle->update(['image_url' => $url]);
+
+        // Record the original plus derived rendition URLs so feed consumers can request
+        // the right size per context (thumbnail vs preview) without re-deriving, and so
+        // admin can audit every image the portal has pushed out.
+        $this->renditions->register(NewsArticle::class, $newsArticle->article_id, $url);
 
         return response()->json($newsArticle->fresh('author'));
     }

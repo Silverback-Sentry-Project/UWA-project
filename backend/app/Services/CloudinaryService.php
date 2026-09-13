@@ -6,14 +6,19 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
-// Feed header images only. Replaces the original Firebase Storage-based upload
-// (FirebaseService::uploadFeedImage(), removed) - Cloud Storage for Firebase requires the
-// Blaze plan and this project's Firebase project (wildwatch-82abc) is on Spark, so no
-// default bucket has ever existed there; every upload attempt threw deep in the SDK.
-// Cloudinary has no equivalent billing-plan gate on its free tier.
+// Feed header images only (originally via Firebase Storage; moved to Cloudinary because
+// this project's Firebase project is on Spark and has no provisioned default bucket - see
+// the controller docblock). uploadFeedImage() is the fixed-route entrypoint used by
+// NewsArticleController; upload() is the general-purpose variant used by the media proxy
+// (MediaController) so any portal-mediated upload lands in the registry.
 class CloudinaryService
 {
     public function uploadFeedImage(string $articleId, UploadedFile $file): string
+    {
+        return $this->upload("feed/{$articleId}", $file);
+    }
+
+    public function upload(string $folder, UploadedFile $file): string
     {
         $cloudName = config('services.cloudinary.cloud_name');
         $apiKey = config('services.cloudinary.api_key');
@@ -27,7 +32,7 @@ class CloudinaryService
         }
 
         $timestamp = time();
-        $publicId = "feed/{$articleId}/".Str::uuid()->toString();
+        $publicId = rtrim($folder, '/').'/'.Str::uuid()->toString();
 
         // Cloudinary's signed-upload scheme: every param except file/cloud_name/api_key/
         // signature/resource_type is sorted and joined as "key=value&key=value...", then
