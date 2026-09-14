@@ -30,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
         Incident::observe(IncidentObserver::class);
         IncidentAssignment::observe(IncidentAssignmentObserver::class);
         WildlifeSighting::observe(WildlifeSightingObserver::class);
+        \App\Models\SosAlert::observe(\App\Observers\SosAlertObserver::class);
         NewsArticle::observe(NewsArticleObserver::class);
     }
 }

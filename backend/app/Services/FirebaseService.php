@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Kreait\Firebase\Contract\Auth;
+use Kreait\Firebase\Contract\Messaging;
 use Kreait\Firebase\Factory;
 use Kreait\Firebase\Firestore;
 
@@ -13,6 +14,8 @@ class FirebaseService
     private ?Auth $auth = null;
 
     private ?Firestore $firestore = null;
+
+    private ?Messaging $messaging = null;
 
     /**
      * Built lazily (not in the constructor) so that a misconfigured/missing credential only
@@ -107,6 +110,26 @@ class FirebaseService
     public function firestore(): Firestore
     {
         return $this->firestore ??= $this->factory()->createFirestore();
+    }
+
+    public function messaging(): Messaging
+    {
+        return $this->messaging ??= $this->factory()->createMessaging();
+    }
+
+    public function fcmTokensFor(?string $uid): array
+    {
+        if (!$uid) {
+            return [];
+        }
+
+        $snapshot = $this->firestore()->database()->collection('users')->document($uid)->snapshot();
+        if (!$snapshot->exists()) {
+            return [];
+        }
+
+        $tokens = $snapshot->data()['fcm_tokens'] ?? [];
+        return is_array($tokens) ? array_filter($tokens, 'is_string') : [];
     }
 
     /**

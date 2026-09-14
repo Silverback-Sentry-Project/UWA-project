@@ -19,6 +19,7 @@ class IncidentObserver
     public function __construct(
         private readonly FirebaseService $firebase,
         private readonly NotificationService $notifications,
+        private readonly \App\Services\MobileAlertService $mobileAlerts,
     ) {}
 
     // Notifies the reporting park's own staff (Warden/Gamepark Officer) - rangers already get
@@ -38,6 +39,20 @@ class IncidentObserver
             $isUrgent ? 'Urgent incident reported' : 'New incident reported',
             "{$incident->incident_type} reported in {$location}.",
             $isUrgent ? 'SOS' : 'Incident',
+        );
+
+        if (SyncContext::$fromFirestore) {
+            return;
+        }
+
+        $title = $isUrgent ? "Emergency alert" : "New incident report";
+        $message = $incident->description ?: "A new incident has been reported in your park.";
+
+        $this->mobileAlerts->notifyWardenAndPublic(
+            $incident->park_id,
+            $incident->firestore_doc_id ?: (string) $incident->incident_id,
+            $title,
+            $message
         );
     }
 
