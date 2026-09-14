@@ -247,6 +247,7 @@ class FirestoreSyncMapper
             'crop damage' => 'Crop Damage',
             'livestock loss' => 'Livestock Loss',
             'human fatality' => 'Human Fatality',
+            'sos' => 'SOS',
             default => 'Property Damage',
         };
     }
