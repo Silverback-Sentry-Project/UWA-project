@@ -10,7 +10,7 @@ $statefulDomains = array_values(array_unique(array_filter(array_merge(
         'SANCTUM_STATEFUL_DOMAINS',
         'localhost,localhost:5173,127.0.0.1,127.0.0.1:5173,127.0.0.1:8000,::1'
     ))),
-    wildwatch_lan_host_domains(),
+    silverback_sentry_lan_host_domains(),
 ))));
 
 return [

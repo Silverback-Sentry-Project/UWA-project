@@ -13,10 +13,10 @@ use Symfony\Component\HttpFoundation\Response;
  * using the caller's Firebase ID token, instead of the HMAC scheme the old Cloud-Functions-relayed
  * webhooks used. Deliberately does not require a matching Laravel `users` row to exist - most
  * mobile reporters (including anonymous guests, who still get a valid Firebase ID token) have no
- * portal-side account at all; FirestoreSyncMapper::resolveUserId() already handles an unmatched
- * firebase_uid gracefully (falls back to a placeholder reporter) and that behavior is unchanged
- * here, just no longer gated behind a Cloud Function that verified nothing about the caller beyond
- * "Firestore accepted this write."
+ * portal-side account at all; FirestoreSyncMapper::resolveUserId() handles an unmatched
+ * firebase_uid by attributing the report to the platform's `anonymous@wildwatch.app` account
+ * (lazily created if missing) rather than trusting anything the client supplied about its own
+ * identity.
  *
  * A valid, unexpired, non-revoked Firebase ID token is proof the request comes from someone the
  * app's own sign-in flow (including anonymous/guest auth) actually authenticated - the same trust

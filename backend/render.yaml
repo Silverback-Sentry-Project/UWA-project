@@ -1,4 +1,4 @@
-# Render Blueprint for the WildWatch Laravel API. See HOSTED-CUTOVER-PLAN.md for
+# Render Blueprint for the SilverBack Sentry Laravel API. See HOSTED-CUTOVER-PLAN.md for
 # the full cutover procedure and open decisions. Deploy via Render's "New Blueprint"
 # flow pointing at this repo/branch, or apply manually via the Render dashboard using
 # these same settings if Blueprint sync isn't wanted.
@@ -20,7 +20,7 @@ services:
     plan: free
     envVars:
       - key: APP_NAME
-        value: "WildWatch Admin API"
+        value: "SilverBack Sentry Admin API"
       - key: APP_ENV
         value: production
       - key: APP_DEBUG
@@ -73,6 +73,15 @@ services:
       - key: MAIL_FROM_ADDRESS
         value: "noreply@wildwatch.app"
       - key: MAIL_FROM_NAME
-        value: "WildWatch"
+        value: "SilverBack Sentry"
       - key: RESEND_API_KEY
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false # feed-article header images (CloudinaryService) - all three Cloudinary
+        # keys come from the Cloudinary dashboard's main page after signup, no setup step
+        # needed. Not Firebase Storage: that requires the Blaze plan and this project's
+        # Firebase project is on Spark, so no bucket was ever provisioned there.
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
         sync: false

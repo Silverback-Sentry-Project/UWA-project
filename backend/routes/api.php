@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\EvidenceFormController;
 use App\Http\Controllers\Api\EvidenceFormSubmissionController;
 use App\Http\Controllers\Api\ForwardedFormController;
 use App\Http\Controllers\Api\IncidentController;
+use App\Http\Controllers\Api\MediaController;
 use App\Http\Controllers\Api\NewsArticleController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ParkController;
@@ -75,6 +76,15 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
 
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markRead']);
+
+    // Media registry + renditions (admin-scoped, borrowed from ww-website's rendition
+    // pipeline). /media/proxy is the SSRF-guarded fetch endpoint for portal-rendered
+    // remote images - see SsrfGuard.
+    Route::get('/media', [MediaController::class, 'index']);
+    Route::post('/media', [MediaController::class, 'store']);
+    Route::delete('/media/{mediaRegistry}', [MediaController::class, 'destroy']);
+    Route::post('/media/{mediaRegistry}/restore', [MediaController::class, 'restore']);
+    Route::get('/media/proxy', [MediaController::class, 'proxy']);
 });
 
 // News feed authoring — Park Warden / UWA Official only

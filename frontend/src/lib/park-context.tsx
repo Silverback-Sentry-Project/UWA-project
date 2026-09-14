@@ -7,7 +7,7 @@ interface ParkContextValue {
 
 const ParkContext = createContext<ParkContextValue | null>(null);
 
-const STORAGE_KEY = "wildwatch_selected_park";
+const STORAGE_KEY = "silverback_sentry_selected_park";
 
 export function ParkProvider({ children }: { children: ReactNode }) {
   const [selectedParkId, setSelectedParkIdState] = useState<string | null>(null);

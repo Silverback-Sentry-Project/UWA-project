@@ -29,7 +29,7 @@ function Gps() {
             Enable Location Access
           </h1>
           <p className="text-muted-foreground text-sm mt-3 leading-relaxed">
-            Wildwatch uses your GPS to accurately tag wildlife sightings and incident reports —
+            SilverBack Sentry uses your GPS to accurately tag wildlife sightings and incident reports —
             helping rangers respond faster.
           </p>
 

@@ -55,7 +55,7 @@ class IncidentObserverTest extends TestCase
             'POST',
             '/api/webhooks/incidents',
             [], [], [],
-            ['CONTENT_TYPE' => 'application/json', 'HTTP_X_WildWatch-Signature' => $signature],
+            ['CONTENT_TYPE' => 'application/json', 'HTTP_X_SilverBackSentry-Signature' => $signature],
             $body,
         );
 

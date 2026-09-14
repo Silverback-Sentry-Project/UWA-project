@@ -9,6 +9,7 @@ use App\Models\Species;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
@@ -51,6 +52,11 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($parks as $park) {
+            // The canonical park/species registry is sourced from UWA records, so these
+            // rows are explicitly marked official and verified at seed time (see the
+            // confidence/last_verified_at migration). Anything not explicitly written as
+            // official keeps the conservative default of "inferred".
+            $park += ['confidence' => 'official', 'last_verified_at' => now()];
             Park::updateOrCreate(['park_name' => $park['park_name']], $park);
         }
 
@@ -58,6 +64,23 @@ class DatabaseSeeder extends Seeder
         // resolved park - see BridgeFixturesSeeder and BRIDGE-CONTRACT.md's "Seed fixture ID
         // mapping". Needs the roles and parks above to already exist.
         $this->call(BridgeFixturesSeeder::class);
+
+        // Platform account that anonymous/guest mobile reporters are attributed to. Named
+        // users match to their own portal row by firebase_uid; anonymous reporters have no
+        // portal account, and FirestoreSyncMapper::anonymousReporterId() resolves them here
+        // instead of (historically) silently attributing to the lowest user_id. Created
+        // eagerly so the FK target always exists before incidents are seeded, and lazily
+        // re-created by the mapper as a belt-and-braces guarantee in live environments.
+        User::firstOrCreate(
+            ['email' => 'anonymous@wildwatch.app'],
+            [
+                'first_name' => 'Anonymous',
+                'last_name' => 'Reporter',
+                'password_hash' => Hash::make(Str::random(40)),
+                'account_status' => 'Active',
+                'email_verified' => true,
+            ]
+        );
 
         $species = [
             ['common_name' => 'Elephant', 'scientific_name' => 'Loxodonta africana', 'conservation_status' => 'Vulnerable'],
@@ -67,6 +90,7 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($species as $s) {
+            $s += ['confidence' => 'official', 'last_verified_at' => now()];
             Species::firstOrCreate(['common_name' => $s['common_name']], $s);
         }
 

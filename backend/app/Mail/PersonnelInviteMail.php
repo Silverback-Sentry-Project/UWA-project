@@ -25,7 +25,7 @@ class PersonnelInviteMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'You have been invited to the WildWatch UWA Portal',
+            subject: 'You have been invited to the SilverBack Sentry UWA Portal',
         );
     }
 

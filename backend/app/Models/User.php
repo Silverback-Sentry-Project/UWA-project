@@ -30,7 +30,7 @@ class User extends Authenticatable
         'created_at' => 'datetime',
     ];
 
-    // Laravel's auth internals look for "password" by default — WildWatch's
+    // Laravel's auth internals look for "password" by default — SilverBack Sentry's
     // schema calls the column password_hash, so we point Auth at it here.
     public function getAuthPassword()
     {

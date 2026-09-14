@@ -31,6 +31,7 @@ import { Route as PortalAuditRouteImport } from './routes/portal.audit'
 import { Route as PortalClaimsRouteImport } from './routes/portal.claims'
 import { Route as PortalConflictsRouteImport } from './routes/portal.conflicts'
 import { Route as PortalDashboardRouteImport } from './routes/portal.dashboard'
+import { Route as PortalDatasourcesRouteImport } from './routes/portal.datasources'
 import { Route as PortalFeedRouteImport } from './routes/portal.feed'
 import { Route as PortalFormsRouteImport } from './routes/portal.forms'
 import { Route as PortalHotspotsRouteImport } from './routes/portal.hotspots'
@@ -155,6 +156,11 @@ const PortalDashboardRoute = PortalDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => PortalRoute,
 } as any)
+const PortalDatasourcesRoute = PortalDatasourcesRouteImport.update({
+  id: '/datasources',
+  path: '/datasources',
+  getParentRoute: () => PortalRoute,
+} as any)
 const PortalFeedRoute = PortalFeedRouteImport.update({
   id: '/feed',
   path: '/feed',
@@ -242,6 +248,7 @@ export interface FileRoutesByFullPath {
   '/portal/claims': typeof PortalClaimsRoute
   '/portal/conflicts': typeof PortalConflictsRoute
   '/portal/dashboard': typeof PortalDashboardRoute
+  '/portal/datasources': typeof PortalDatasourcesRoute
   '/portal/feed': typeof PortalFeedRoute
   '/portal/forms': typeof PortalFormsRoute
   '/portal/hotspots': typeof PortalHotspotsRoute
@@ -276,6 +283,7 @@ export interface FileRoutesByTo {
   '/portal/claims': typeof PortalClaimsRoute
   '/portal/conflicts': typeof PortalConflictsRoute
   '/portal/dashboard': typeof PortalDashboardRoute
+  '/portal/datasources': typeof PortalDatasourcesRoute
   '/portal/feed': typeof PortalFeedRoute
   '/portal/forms': typeof PortalFormsRoute
   '/portal/hotspots': typeof PortalHotspotsRoute
@@ -314,6 +322,7 @@ export interface FileRoutesById {
   '/portal/claims': typeof PortalClaimsRoute
   '/portal/conflicts': typeof PortalConflictsRoute
   '/portal/dashboard': typeof PortalDashboardRoute
+  '/portal/datasources': typeof PortalDatasourcesRoute
   '/portal/feed': typeof PortalFeedRoute
   '/portal/forms': typeof PortalFormsRoute
   '/portal/hotspots': typeof PortalHotspotsRoute
@@ -353,6 +362,7 @@ export interface FileRouteTypes {
     | '/portal/claims'
     | '/portal/conflicts'
     | '/portal/dashboard'
+    | '/portal/datasources'
     | '/portal/feed'
     | '/portal/forms'
     | '/portal/hotspots'
@@ -387,6 +397,7 @@ export interface FileRouteTypes {
     | '/portal/claims'
     | '/portal/conflicts'
     | '/portal/dashboard'
+    | '/portal/datasources'
     | '/portal/feed'
     | '/portal/forms'
     | '/portal/hotspots'
@@ -424,6 +435,7 @@ export interface FileRouteTypes {
     | '/portal/claims'
     | '/portal/conflicts'
     | '/portal/dashboard'
+    | '/portal/datasources'
     | '/portal/feed'
     | '/portal/forms'
     | '/portal/hotspots'
@@ -606,6 +618,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalDashboardRouteImport
       parentRoute: typeof PortalRoute
     }
+    '/portal/datasources': {
+      id: '/portal/datasources'
+      path: '/datasources'
+      fullPath: '/portal/datasources'
+      preLoaderRoute: typeof PortalDatasourcesRouteImport
+      parentRoute: typeof PortalRoute
+    }
     '/portal/feed': {
       id: '/portal/feed'
       path: '/feed'
@@ -736,6 +755,7 @@ interface PortalRouteChildren {
   PortalClaimsRoute: typeof PortalClaimsRoute
   PortalConflictsRoute: typeof PortalConflictsRoute
   PortalDashboardRoute: typeof PortalDashboardRoute
+  PortalDatasourcesRoute: typeof PortalDatasourcesRoute
   PortalFeedRoute: typeof PortalFeedRoute
   PortalFormsRoute: typeof PortalFormsRoute
   PortalHotspotsRoute: typeof PortalHotspotsRoute
@@ -753,6 +773,7 @@ const PortalRouteChildren: PortalRouteChildren = {
   PortalClaimsRoute: PortalClaimsRoute,
   PortalConflictsRoute: PortalConflictsRoute,
   PortalDashboardRoute: PortalDashboardRoute,
+  PortalDatasourcesRoute: PortalDatasourcesRoute,
   PortalFeedRoute: PortalFeedRoute,
   PortalFormsRoute: PortalFormsRoute,
   PortalHotspotsRoute: PortalHotspotsRoute,

@@ -164,6 +164,125 @@ class MobileBridgeTest extends TestCase
         $this->assertSoftDeleted('incidents', ['firestore_doc_id' => 'firestore-inc-mobile-003']);
     }
 
+    // Regression for the numeric-reported_by identity spoof. The mapper used to accept a
+    // client-supplied numeric reported_by (FirestoreSyncMapper::resolveUserId) whenever
+    // the verified Firebase UID didn't match a known user, so anyone with a valid token
+    // could attribute incidents to an arbitrary portal user_id. Now that fallback is
+    // gone: an unknown UID attributes to the platform's anonymous reporter account.
+    public function test_mobile_incident_call_never_trusts_a_numeric_reported_by(): void
+    {
+        $this->seedBridgePrerequisites();
+
+        $impersonated = User::create([
+            'first_name' => 'Target',
+            'last_name' => 'Victim',
+            'email' => 'impersonation-target@test.local',
+            'password_hash' => Hash::make('password'),
+            'account_status' => 'Active',
+        ]);
+
+        $this->mockVerifiedToken('some-anonymous-guest-uid');
+
+        $payload = array_merge($this->sampleIncidentPayload(), [
+            'reported_by' => $impersonated->user_id,
+        ]);
+
+        $response = $this->postJson('/api/mobile/incidents', [
+            'docId' => 'firestore-inc-mobile-spoof-001',
+            'eventType' => 'create',
+            'after' => $payload,
+        ], ['Authorization' => 'Bearer valid-token']);
+
+        $response->assertOk();
+        $this->assertDatabaseMissing('incidents', [
+            'firestore_doc_id' => 'firestore-inc-mobile-spoof-001',
+            'reported_by' => $impersonated->user_id,
+        ]);
+
+        $anonymous = User::where('email', 'anonymous@wildwatch.app')->first();
+        $this->assertNotNull($anonymous, 'mapper should lazily create the anonymous reporter account');
+        $this->assertDatabaseHas('incidents', [
+            'firestore_doc_id' => 'firestore-inc-mobile-spoof-001',
+            'reported_by' => $anonymous->user_id,
+        ]);
+    }
+
+    public function test_mobile_incident_call_persists_severity_for_triage(): void
+    {
+        $this->seedBridgePrerequisites();
+        $this->mockVerifiedToken('mobile-reporter-uid');
+
+        $payload = array_merge($this->sampleIncidentPayload(), ['severity' => 'high']);
+
+        $this->postJson('/api/mobile/incidents', [
+            'docId' => 'firestore-inc-mobile-sev-001',
+            'eventType' => 'create',
+            'after' => $payload,
+        ], ['Authorization' => 'Bearer valid-token'])->assertOk();
+
+        $this->assertDatabaseHas('incidents', [
+            'firestore_doc_id' => 'firestore-inc-mobile-sev-001',
+            'severity' => 'high',
+        ]);
+    }
+
+    public function test_mobile_incident_call_stores_null_coordinates_instead_of_fabricating_zero(): void
+    {
+        $this->seedBridgePrerequisites();
+        $this->mockVerifiedToken('mobile-reporter-uid');
+
+        // Missing lat/lng used to become (0.0, 0.0) - a phantom "null island" incident.
+        $payload = array_merge($this->sampleIncidentPayload(), [
+            'lat' => 0,
+            'lng' => 0,
+        ]);
+
+        $this->postJson('/api/mobile/incidents', [
+            'docId' => 'firestore-inc-mobile-loc-001',
+            'eventType' => 'create',
+            'after' => $payload,
+        ], ['Authorization' => 'Bearer valid-token'])->assertOk();
+
+        $this->assertDatabaseHas('incidents', [
+            'firestore_doc_id' => 'firestore-inc-mobile-loc-001',
+            'latitude' => null,
+            'longitude' => null,
+        ]);
+
+        // Out-of-range values are rejected too, not blindly stored.
+        $payload['lat'] = 200;
+        $payload['lng'] = 400;
+
+        $this->postJson('/api/mobile/incidents', [
+            'docId' => 'firestore-inc-mobile-loc-002',
+            'eventType' => 'create',
+            'after' => $payload,
+        ], ['Authorization' => 'Bearer valid-token'])->assertOk();
+
+        $this->assertDatabaseHas('incidents', [
+            'firestore_doc_id' => 'firestore-inc-mobile-loc-002',
+            'latitude' => null,
+            'longitude' => null,
+        ]);
+    }
+
+    public function test_mobile_incident_call_requires_after_for_create_and_update(): void
+    {
+        $this->seedBridgePrerequisites();
+        $this->mockVerifiedToken('mobile-reporter-uid');
+
+        // The old `after ?? before` fallback would have "updated" the (nonexistent) record
+        // from the pre-update snapshot. Create/update must carry the new state.
+        $response = $this->postJson('/api/mobile/incidents', [
+            'docId' => 'firestore-inc-mobile-noafter-001',
+            'eventType' => 'update',
+            'before' => $this->sampleIncidentPayload(),
+        ], ['Authorization' => 'Bearer valid-token']);
+
+        $response->assertStatus(422);
+        $this->assertDatabaseCount('incidents', 0);
+    }
+
     private function mockVerifiedToken(?string $uid, bool $shouldThrow = false): void
     {
         $auth = Mockery::mock(Auth::class);

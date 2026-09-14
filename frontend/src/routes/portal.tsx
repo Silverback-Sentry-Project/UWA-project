@@ -5,7 +5,7 @@ import { ParkProvider } from "@/lib/park-context";
 
 export const Route = createFileRoute("/portal")({
   head: () => ({
-    title: "WildWatch Portal",
+    title: "SilverBack Sentry Portal",
     meta: [
       {
         name: "description",

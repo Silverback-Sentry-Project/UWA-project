@@ -16,7 +16,7 @@ class VerifyWebhookSignature
             return response()->json(['message' => 'Webhook secret is not configured.'], 503);
         }
 
-        $signature = $request->header('X-WildWatch-Signature');
+        $signature = $request->header('X-SilverBackSentry-Signature');
         if (! is_string($signature) || $signature === '') {
             return response()->json(['message' => 'Missing webhook signature.'], 401);
         }

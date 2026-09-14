@@ -2,10 +2,8 @@
 
 namespace App\Services;
 
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Str;
 use Kreait\Firebase\Contract\Auth;
-use Kreait\Firebase\Contract\Storage;
+use Kreait\Firebase\Contract\Messaging;
 use Kreait\Firebase\Factory;
 use Kreait\Firebase\Firestore;
 
@@ -17,7 +15,7 @@ class FirebaseService
 
     private ?Firestore $firestore = null;
 
-    private ?Storage $storage = null;
+    private ?Messaging $messaging = null;
 
     /**
      * Built lazily (not in the constructor) so that a misconfigured/missing credential only
@@ -114,41 +112,24 @@ class FirebaseService
         return $this->firestore ??= $this->factory()->createFirestore();
     }
 
-    public function storage(): Storage
+    public function messaging(): Messaging
     {
-        return $this->storage ??= $this->factory()->createStorage();
+        return $this->messaging ??= $this->factory()->createMessaging();
     }
 
-    /**
-     * Upload a feed-article header image to Firebase Storage and return a public,
-     * token-based download URL - the same URL format/mechanism the Firebase console's own
-     * "get download URL" produces, so it works via a plain AsyncImage/browser <img> fetch
-     * with no auth header, regardless of storage.rules (the upload itself goes through this
-     * Admin SDK call, which authenticates as the service account and bypasses storage.rules
-     * entirely - see storage.rules' own comment on the feed/ path for why "allow write: if
-     * false" there is accurate, not a bug).
-     */
-    public function uploadFeedImage(string $articleId, UploadedFile $file): string
+    public function fcmTokensFor(?string $uid): array
     {
-        $bucket = $this->storage()->getBucket();
-        $extension = $file->getClientOriginalExtension() ?: 'jpg';
-        $path = "feed/{$articleId}/".Str::uuid()->toString().'.'.$extension;
-        $token = Str::uuid()->toString();
+        if (!$uid) {
+            return [];
+        }
 
-        $bucket->upload(
-            fopen($file->getRealPath(), 'r'),
-            [
-                'name' => $path,
-                'metadata' => [
-                    'contentType' => $file->getMimeType(),
-                    'metadata' => ['firebaseStorageDownloadTokens' => $token],
-                ],
-            ]
-        );
+        $snapshot = $this->firestore()->database()->collection('users')->document($uid)->snapshot();
+        if (!$snapshot->exists()) {
+            return [];
+        }
 
-        $encodedPath = rawurlencode($path);
-
-        return "https://firebasestorage.googleapis.com/v0/b/{$bucket->name()}/o/{$encodedPath}?alt=media&token={$token}";
+        $tokens = $snapshot->data()['fcm_tokens'] ?? [];
+        return is_array($tokens) ? array_filter($tokens, 'is_string') : [];
     }
 
     /**

@@ -8,6 +8,7 @@ use App\Models\SosAlert;
 use App\Models\WildlifeSighting;
 use App\Services\FirestoreSyncMapper;
 use App\Support\SyncContext;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,9 +16,7 @@ use Illuminate\Support\Facades\Validator;
 
 class WebhookController extends Controller
 {
-    public function __construct(private readonly FirestoreSyncMapper $mapper)
-    {
-    }
+    public function __construct(private readonly FirestoreSyncMapper $mapper) {}
 
     public function incidents(Request $request): JsonResponse
     {
@@ -138,7 +137,6 @@ class WebhookController extends Controller
 
         $docId = $request->string('docId')->value();
         $eventType = $request->string('eventType')->value();
-        $payload = $request->input('after') ?? $request->input('before') ?? [];
 
         if ($eventType === 'delete') {
             SyncContext::$fromFirestore = true;
@@ -152,8 +150,14 @@ class WebhookController extends Controller
             return response()->json(['message' => 'Deleted', 'docId' => $docId]);
         }
 
+        // create/update events must carry the new document state ("after"). The old
+        // `after ?? before` fallback silently rewrote the current row with the PRE-update
+        // snapshot whenever a caller sent an update event with no/empty `after` - fixing
+        // the mapping to the latest state instead of resurrecting a stale one.
+        $payload = $request->input('after');
+
         if (! is_array($payload) || $payload === []) {
-            return response()->json(['message' => 'Missing document payload.'], 422);
+            return response()->json(['message' => 'Missing "after" payload for create/update event.'], 422);
         }
 
         $attributes = $mapAttributes($docId, $payload);
@@ -162,7 +166,7 @@ class WebhookController extends Controller
 
         try {
             $record = DB::transaction(function () use ($modelClass, $externalKey, $docId, $attributes) {
-                /** @var \Illuminate\Database\Eloquent\Model $model */
+                /** @var Model $model */
                 $model = $modelClass::updateOrCreate(
                     [$externalKey => $docId],
                     $attributes

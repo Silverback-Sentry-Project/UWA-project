@@ -41,7 +41,7 @@ function Auth() {
                 className="font-bold text-lg"
                 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
               >
-                Wildwatch
+                SilverBack Sentry
               </span>
             </div>
             <h1
