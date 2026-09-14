@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "WildWatch Portal API",
+    "name": "SilverBack Sentry Portal API",
     "description": "Covers the full web-portal/backend API surface (routes/api.php): admin-portal auth, incidents, SOS alerts, users/rangers, news articles, compensation claims, forwarded forms, the Gamepark portal, and the Firebase→Laravel webhook bridge. See BRIDGE-CONTRACT.md for the bridge's field-mapping contract and REPOS.md/AGENTS.md for the wider project map.\n\nSetup:\n1. Run the 'Login' request first (Auth folder) - its test script saves the returned token into the `bearer_token` collection variable automatically, so every other authenticated request just works afterward.\n2. Webhook requests sign themselves automatically from the `webhook_secret` collection variable (see the Webhooks folder's pre-request script) - set it to match `FIREBASE_BRIDGE_SECRET` in your backend/.env.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
@@ -79,7 +79,7 @@
     },
     {
       "name": "Webhooks (Firebase → Laravel bridge)",
-      "description": "HMAC-signed, outside Sanctum entirely (see BRIDGE-CONTRACT.md and VerifyWebhookSignature middleware). The pre-request script below computes X-WildWatch-Signature from the raw request body and the `webhook_secret` collection variable, exactly like functions/src/bridge.ts's signPayload() does on the Cloud Functions side - set `webhook_secret` to match your backend/.env's FIREBASE_BRIDGE_SECRET before using these.",
+      "description": "HMAC-signed, outside Sanctum entirely (see BRIDGE-CONTRACT.md and VerifyWebhookSignature middleware). The pre-request script below computes X-SilverBackSentry-Signature from the raw request body and the `webhook_secret` collection variable, exactly like functions/src/bridge.ts's signPayload() does on the Cloud Functions side - set `webhook_secret` to match your backend/.env's FIREBASE_BRIDGE_SECRET before using these.",
       "event": [
         {
           "listen": "prerequest",
@@ -90,7 +90,7 @@
               "const body = pm.request.body && pm.request.body.raw ? pm.request.body.raw : '';",
               "if (secret && body) {",
               "    const digest = CryptoJS.HmacSHA256(body, secret).toString();",
-              "    pm.request.headers.upsert({ key: 'X-WildWatch-Signature', value: `sha256=${digest}` });",
+              "    pm.request.headers.upsert({ key: 'X-SilverBackSentry-Signature', value: `sha256=${digest}` });",
               "}"
             ]
           }

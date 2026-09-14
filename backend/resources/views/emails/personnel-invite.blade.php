@@ -3,9 +3,9 @@
 <head><meta charset="utf-8"></head>
 <body style="font-family: Arial, sans-serif; color: #2b2b1f; background:#f6f5ef; padding:24px;">
   <div style="max-width:480px; margin:0 auto; background:#ffffff; border-radius:10px; padding:28px; border:1px solid #e4e2d6;">
-    <h2 style="color:#4b5d2a; margin-top:0;">Welcome to WildWatch</h2>
+    <h2 style="color:#4b5d2a; margin-top:0;">Welcome to SilverBack Sentry</h2>
     <p>Hi {{ $recipientName }},</p>
-    <p>You've been invited to join the <strong>WildWatch UWA Administrative Portal</strong> as a <strong>{{ $roleName }}</strong>{{ $parkName ? ", working at {$parkName}" : '' }}.</p>
+    <p>You've been invited to join the <strong>SilverBack Sentry UWA Administrative Portal</strong> as a <strong>{{ $roleName }}</strong>{{ $parkName ? ", working at {$parkName}" : '' }}.</p>
 
     <div style="background:#f6f5ef; border:1px solid #e4e2d6; border-radius:8px; padding:16px; margin:20px 0;">
       <div style="font-size:12px; text-transform:uppercase; letter-spacing:0.06em; color:#8a8770;">Login email</div>
@@ -23,7 +23,7 @@
 
     @if($hasMobileAccount)
     <div style="background:#eef2e6; border:1px solid #cfd9be; border-radius:8px; padding:16px; margin:20px 0;">
-      <div style="font-weight:bold; margin-bottom:6px;">You can also sign in to the WildWatch mobile app</div>
+      <div style="font-weight:bold; margin-bottom:6px;">You can also sign in to the SilverBack Sentry mobile app</div>
       <p style="margin:0;">Open the app, enter <strong>{{ $recipientEmail }}</strong> under "Continue with email", and tap the sign-in link we send you — no password needed there.</p>
     </div>
     @endif

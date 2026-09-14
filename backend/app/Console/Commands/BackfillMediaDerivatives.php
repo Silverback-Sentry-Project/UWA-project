@@ -9,7 +9,7 @@ use Illuminate\Console\Command;
 
 class BackfillMediaDerivatives extends Command
 {
-    protected $signature = 'wildwatch:backfill-media';
+    protected $signature = 'silverback-sentry:backfill-media';
 
     protected $description = 'Create media_registry rows and rendition URLs for existing news article images';
 

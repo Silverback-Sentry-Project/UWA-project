@@ -60,7 +60,7 @@ class WebhookBridgeTest extends TestCase
             [],
             [
                 'CONTENT_TYPE' => 'application/json',
-                'HTTP_X_WildWatch-Signature' => $signature,
+                'HTTP_X_SilverBackSentry-Signature' => $signature,
             ],
             $body,
         );
@@ -81,7 +81,7 @@ class WebhookBridgeTest extends TestCase
         ];
 
         $response = $this->postJson('/api/webhooks/incidents', $payload, [
-            'X-WildWatch-Signature' => 'sha256=deadbeef',
+            'X-SilverBackSentry-Signature' => 'sha256=deadbeef',
         ]);
 
         $response->assertUnauthorized();
@@ -170,7 +170,7 @@ class WebhookBridgeTest extends TestCase
             [],
             [
                 'CONTENT_TYPE' => 'application/json',
-                'HTTP_X_WildWatch-Signature' => $signature,
+                'HTTP_X_SilverBackSentry-Signature' => $signature,
             ],
             $body,
         );

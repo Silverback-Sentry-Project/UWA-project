@@ -239,7 +239,7 @@ class UserController extends Controller
             'mail_sent' => $mailSent,
             'message' => $mailSent
                 ? ($mobileRole !== null
-                    ? 'Invitation email sent — they can sign in to the WildWatch mobile app with this email.'
+                    ? 'Invitation email sent — they can sign in to the SilverBack Sentry mobile app with this email.'
                     : 'Invitation email sent.')
                 : 'Account created, but the invite email could not be sent — check the mail configuration.',
             // Only surfaced when APP_DEBUG=true, to help diagnose a broken mail gateway without leaking details in production.

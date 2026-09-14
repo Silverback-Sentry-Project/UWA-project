@@ -1,11 +1,11 @@
-// Thin fetch wrapper around the WildWatch Admin API (Laravel + Sanctum).
+// Thin fetch wrapper around the SilverBack Sentry Admin API (Laravel + Sanctum).
 // Set VITE_API_URL=auto in .env to derive the API host from window.location.hostname
 // (LAN-friendly). Or set an explicit URL, e.g. VITE_API_URL=http://192.168.1.42:8000/api
 
 import { resolveApiBase } from "./api-base";
 
 const API_BASE = resolveApiBase();
-const TOKEN_KEY = "wildwatch_admin_token";
+const TOKEN_KEY = "silverback_sentry_admin_token";
 
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;

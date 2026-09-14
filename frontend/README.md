@@ -1,6 +1,6 @@
-# WildWatch Portal Frontend
+# SilverBack Sentry Portal Frontend
 
-React 19 and TanStack Start (file-based routing, server-side rendering) admin and warden portal for WildWatch, styled with Tailwind and shadcn-derived components, using TanStack Query for data fetching and Leaflet for maps. Talks to the Laravel API in `../backend/`.
+React 19 and TanStack Start (file-based routing, server-side rendering) admin and warden portal for SilverBack Sentry, styled with Tailwind and shadcn-derived components, using TanStack Query for data fetching and Leaflet for maps. Talks to the Laravel API in `../backend/`.
 
 ## What this is for
 

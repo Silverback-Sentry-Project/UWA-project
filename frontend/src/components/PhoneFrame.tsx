@@ -5,7 +5,7 @@ export function PhoneFrame({ children }: { children: ReactNode }) {
     <div className="min-h-screen w-full flex items-center justify-center gradient-sky py-10 px-4">
       <div className="hidden md:flex flex-col gap-3 mr-12 max-w-xs">
         <div className="text-sm font-semibold text-foreground/70 uppercase tracking-widest">
-          Wildwatch
+          SilverBack Sentry
         </div>
         <h1
           className="text-4xl font-extrabold text-foreground"

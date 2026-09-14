@@ -1,10 +1,10 @@
 <?php
 
-if (! function_exists('wildwatch_lan_host_domains')) {
+if (! function_exists('silverback_sentry_lan_host_domains')) {
     /**
      * @return list<string>
      */
-    function wildwatch_lan_host_domains(): array
+    function silverback_sentry_lan_host_domains(): array
     {
         $lanHost = env('DEV_LAN_HOST');
         if (! is_string($lanHost) || $lanHost === '') {

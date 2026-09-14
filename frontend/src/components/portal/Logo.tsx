@@ -1,5 +1,5 @@
 /**
- * Renders the WildWatch geometric "W" logo, matching the mobile app's icon.
+ * Renders the SilverBack Sentry geometric "W" logo, matching the mobile app's icon.
  * Composed of two mountain-like peaks representing nature and vigilance.
  */
 export function Logo({ size = 22, className }: { size?: number; className?: string }) {

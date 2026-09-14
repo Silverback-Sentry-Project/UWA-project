@@ -1,6 +1,6 @@
-# WildWatch Web Portal
+# SilverBack Sentry Web Portal
 
-The portal side of the WildWatch platform: a Laravel 13 + Sanctum API (`backend/`) and a React + TanStack Start frontend (`frontend/`).
+The portal side of the SilverBack Sentry platform: a Laravel 13 + Sanctum API (`backend/`) and a React + TanStack Start frontend (`frontend/`).
 
 **Architecture:** Postgres (Neon, hosted on Render) is authoritative for portal data (claims, payments, audit). Mobile-originated data lives in Firebase/Firestore. A bridge layer syncs between them — mobile calls Laravel directly after a Firestore write (the Firebase project is on the Spark plan, which can't run Cloud Functions), and Laravel's own Firestore observers push portal-originated changes back out — guarded by the `source_system` field to prevent echo loops. See `/home/geto/Projects/Documentations/WildWatch/root-contracts/REPOS.md` (repo map) and `/home/geto/Projects/Documentations/WildWatch/root-contracts/BRIDGE-CONTRACT.md` (field-level sync contract).
 

@@ -6,8 +6,8 @@ export type UserPrefs = {
   park: string;
 };
 
-const KEY = "wildwatch.prefs";
-const EVENT = "wildwatch:prefs";
+const KEY = "silverback_sentry.prefs";
+const EVENT = "silverback_sentry:prefs";
 const DEFAULTS: UserPrefs = {
   fullName: "Amara Nakato",
   language: "English",

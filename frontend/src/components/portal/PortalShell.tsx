@@ -120,7 +120,7 @@ export function PortalShell({
         .join("")
         .toUpperCase()
     : "—";
-  const roleLabel = user?.roles?.[0] ?? "WildWatch Official";
+  const roleLabel = user?.roles?.[0] ?? "SilverBack Sentry Official";
   const [notifOpen, setNotifOpen] = useState(false);
   const queryClient = useQueryClient();
 
@@ -167,7 +167,7 @@ export function PortalShell({
           </div>
           <div>
             <div className="font-bold portal-display text-[16px] leading-tight tracking-tight">
-              WildWatch
+              SilverBack Sentry
             </div>
             <div className="text-[10px] uppercase tracking-[0.1em] text-white/50 font-semibold">
               HQ Control

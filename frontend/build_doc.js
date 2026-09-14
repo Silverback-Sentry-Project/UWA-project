@@ -74,7 +74,7 @@ const TABLE_BORDERS = {
 // ---------------------------------------------------------------------------
 const titleBlock = [
   new Paragraph({ spacing: { before: 1600, after: 120 }, alignment: AlignmentType.CENTER,
-    children: [new TextRun({ text: "WildWatch", bold: true, size: 64, color: GREEN })] }),
+    children: [new TextRun({ text: "SilverBack Sentry", bold: true, size: 64, color: GREEN })] }),
   new Paragraph({ spacing: { after: 400 }, alignment: AlignmentType.CENTER,
     children: [new TextRun({ text: "A Digital Platform for Human\u2013Wildlife Coexistence in Uganda's Protected-Area Buffer Zones", bold: true, size: 28, color: GOLD })] }),
   new Paragraph({ spacing: { after: 200 }, alignment: AlignmentType.CENTER,
@@ -101,7 +101,7 @@ const section1 = [
     ...boldLead("The hook. ", "Closing that gap turns paper into a verifiable digital workflow for UWA, gives communities a transparent channel they can trust, gives rangers spatial dispatch intelligence, and gives policymakers the pattern data to act before, rather than after, the next conflict."),
   ]),
   p([
-    ...boldLead("The objective. ", "WildWatch will design and deliver that platform, enabling real-time incident reporting, coordinated ranger dispatch, and transparent compensation management, to support sustainable human\u2013wildlife coexistence across Uganda's national parks."),
+    ...boldLead("The objective. ", "SilverBack Sentry will design and deliver that platform, enabling real-time incident reporting, coordinated ranger dispatch, and transparent compensation management, to support sustainable human\u2013wildlife coexistence across Uganda's national parks."),
   ]),
 ];
 
@@ -111,7 +111,7 @@ const section1 = [
 const section2 = [
   h("2. The Intervention: Innovation", HeadingLevel.HEADING_1),
   h("2.1 Current Status: Building on What Already Works", HeadingLevel.HEADING_2),
-  p([run("Uganda's conservation and community-reporting ecosystem already includes several tools that have proven their value in a specific part of the human\u2013wildlife conflict (HWC) management chain. WildWatch is designed to build on what each of them has already demonstrated works, and to connect the parts that, until now, have had no reason to talk to one another.")]),
+  p([run("Uganda's conservation and community-reporting ecosystem already includes several tools that have proven their value in a specific part of the human\u2013wildlife conflict (HWC) management chain. SilverBack Sentry is designed to build on what each of them has already demonstrated works, and to connect the parts that, until now, have had no reason to talk to one another.")]),
 
   bullet(boldLead("Paper-based incident forms ", "remain UWA's official record of a reported incursion within the statutory three-day window, and they require no equipment, training, or connectivity to complete \u2014 an important strength in the lowest-resourced buffer zones (Mubalama & Byakagaba, 2022). Their limitation is not the form itself but what happens after filing: a paper record cannot be searched, aggregated across ranger posts, or fed into a pattern analysis.")),
   bullet(boldLead("Ushahidi and comparable open crowdsourcing platforms ", "proved that communities will report an incident when given an accessible channel, and their use in crisis mapping (Meier, 2015) opened the door for citizen reporting in low-infrastructure settings worldwide. Because the platform is intentionally general-purpose, a large share of submissions in comparable open deployments arrive without the structured fields (precise location, species, loss type) a conservation analyst needs \u2014 an opening for a domain-specific reporting schema to build directly on Ushahidi's proof-of-concept.")),
@@ -120,11 +120,11 @@ const section2 = [
   bullet(boldLead("Ad hoc phone coordination ", "is the de facto standard for most ranger units today, and it endures because it is immediate and needs no infrastructure. Its trade-off is that a call leaves no searchable record for the next shift, the next district, or the next policy review.")),
   bullet(boldLead("WildWatch-branded apps in India ", "are the closest direct precedent to this project in name and concept, and the closest evidence that the underlying idea is sound. Independent teams have shipped at least three apps under this name since 2017, most from the same Kerala university-incubator ecosystem: a Wildlife Trust of India / Amal Jyothi College of Engineering pilot with SMS alerts and early-warning lights at Periyar Tiger Reserve (Wildlife Trust of India, 2017); a private multi-module fence-and-sensor platform (WildWatch, n.d.); and the most recent, Leopard Tech Labs' WildWatch (Google Play, package com.leopard.hwc), a GIS-based public reporting app with 1-km-radius alerts, built under India's Forest-PLUS 3.0 programme \u2014 a joint initiative of India's Ministry of Environment, Forest and Climate Change and USAID \u2014 and scoped to Kerala's Forest Department (Leopard Tech Labs, 2025). A government-backed app reaching real users under this model is strong, independent validation that a mobile reporting channel is the right response to human\u2013wildlife conflict. None of the India builds, by their own public documentation, include a statutory compensation-claim workflow, an explicit offline-first design for sub-10%-connectivity settings, or any grounding in Uganda's legal or institutional framework \u2014 each was built for a single Indian state's forest department and its considerably better rural connectivity.")),
 
-  p([run("Together, these approaches show that every building block WildWatch needs \u2014 paper compliance, community reporting, ranger-side spatial data, offline survey tools, real-time coordination, and even a shipped app under a similar name \u2014 already has a working precedent. What has not yet been tested is combining them into a single record for Uganda's buffer zones, so that a report filed by a community member, a dispatch decision made by a ranger, a hotspot flagged by the data, and a compensation claim tracked by a household all live in the same system (Baruch-Mordo et al., 2014).")]),
-  p([run("Note: this WildWatch is an independently developed Ugandan platform, conceived and built without knowledge of the India-based apps discussed above; the name overlap is coincidental. A formal name-availability check is planned before any public or commercial launch, to avoid market and app-store confusion with the India-based products.", italics: true, size: 19, color: "4a4a4a" })]),
+  p([run("Together, these approaches show that every building block SilverBack Sentry needs \u2014 paper compliance, community reporting, ranger-side spatial data, offline survey tools, real-time coordination, and even a shipped app under a similar name \u2014 already has a working precedent. What has not yet been tested is combining them into a single record for Uganda's buffer zones, so that a report filed by a community member, a dispatch decision made by a ranger, a hotspot flagged by the data, and a compensation claim tracked by a household all live in the same system (Baruch-Mordo et al., 2014).")]),
+  p([run("Note: this SilverBack Sentry is an independently developed Ugandan platform, conceived and built without knowledge of the India-based apps discussed above; the name overlap is coincidental. A formal name-availability check is planned before any public or commercial launch, to avoid market and app-store confusion with the India-based products.", italics: true, size: 19, color: "4a4a4a" })]),
 
-  h("2.2 The WildWatch Innovation", HeadingLevel.HEADING_2),
-  p([run("WildWatch is an offline-first digital platform that carries a single incident record through its full lifecycle \u2014 report, dispatch, analysis, and compensation \u2014 so that no step has to restart on a new tool or a new form. The current working prototype (source code reviewed for this document) already implements the core of this pipeline; a smaller number of components are designed and scoped but not yet built. Both are shown below, so the panel sees the actual state of the build rather than only the end vision.")]),
+  h("2.2 The SilverBack Sentry Innovation", HeadingLevel.HEADING_2),
+  p([run("SilverBack Sentry is an offline-first digital platform that carries a single incident record through its full lifecycle \u2014 report, dispatch, analysis, and compensation \u2014 so that no step has to restart on a new tool or a new form. The current working prototype (source code reviewed for this document) already implements the core of this pipeline; a smaller number of components are designed and scoped but not yet built. Both are shown below, so the panel sees the actual state of the build rather than only the end vision.")]),
 
   h("Built in the current prototype", HeadingLevel.HEADING_3),
   bullet(boldLead("Offline-first community and ranger reporting. ", "A structured, geotagged mobile form with camera capture lets a user log an incursion or sighting; the report queues in a local offline outbox and syncs automatically once a connection is available, so a day's walk to the nearest office is no longer the only way to file on time.")),
@@ -142,8 +142,8 @@ const section2 = [
 
   h("2.3 Evidence of Feasibility", HeadingLevel.HEADING_2),
   p([run("Each roadmap component above is designed to reproduce a documented result from a comparable deployment elsewhere, giving the roadmap \u2014 not only the built prototype \u2014 an evidence base going into the pilot:")]),
-  bullet([run("A review of 14 ranger-support deployments found that adding geographic dispatch data cut response time by 34% "), run("(Jumabay et al., 2021)", { italics: true }), run(", the class of intelligence GPS-routed dispatch is designed to add on top of WildWatch's existing assignment queue.")]),
-  bullet([run("Giving crowdsourced reports a structured schema reduced unusable submissions by 62% in the Ushahidi Haiti deployment "), run("(Heinzelman & Waters, 2010)", { italics: true }), run(", the improvement WildWatch's domain-specific reporting form is designed to carry forward.")]),
+  bullet([run("A review of 14 ranger-support deployments found that adding geographic dispatch data cut response time by 34% "), run("(Jumabay et al., 2021)", { italics: true }), run(", the class of intelligence GPS-routed dispatch is designed to add on top of SilverBack Sentry's existing assignment queue.")]),
+  bullet([run("Giving crowdsourced reports a structured schema reduced unusable submissions by 62% in the Ushahidi Haiti deployment "), run("(Heinzelman & Waters, 2010)", { italics: true }), run(", the improvement SilverBack Sentry's domain-specific reporting form is designed to carry forward.")]),
   bullet([run("Offline-first mobile tools sustain 3.2\u00d7 higher usage in comparable sub-Saharan deployments "), run("(GSMA, 2023)", { italics: true }), run(", a decisive advantage given Uganda's rural internet penetration of roughly 9% "), run("(FinScope Uganda, 2023)", { italics: true }), run(" \u2014 the constraint the built offline outbox already addresses today.")]),
   bullet([run("Digital audit trails were the single most effective trust-rebuilding intervention across 23 ICT-mediated accountability programmes reviewed globally "), run("(Peixoto & Fox, 2016)", { italics: true }), run(", directly supporting the compensation-tracking workflow already implemented in the prototype.")]),
 ];
@@ -153,10 +153,10 @@ const section2 = [
 // ---------------------------------------------------------------------------
 const clatHeading = [
   h("2.4 Competitive Landscape Analysis Table (CLAT)", HeadingLevel.HEADING_2),
-  p([run("WildWatch's own column below is split to distinguish what the current prototype already does from what is planned; \u201cplanned\u201d items carry the feasibility evidence in Section 2.3, not a claim of present capability.", italics: true, size: 19 })]),
+  p([run("SilverBack Sentry's own column below is split to distinguish what the current prototype already does from what is planned; \u201cplanned\u201d items carry the feasibility evidence in Section 2.3, not a claim of present capability.", italics: true, size: 19 })]),
 ];
 
-const clatHeaders = ["Capability", "Paper Forms", "Ushahidi-style", "SMART", "KoboToolbox", "Ad Hoc Phone", "WildWatch (India \u2014 Leopard Tech Labs et al.)", "WildWatch (Uganda \u2014 this platform)"];
+const clatHeaders = ["Capability", "Paper Forms", "Ushahidi-style", "SMART", "KoboToolbox", "Ad Hoc Phone", "WildWatch (India \u2014 Leopard Tech Labs et al.)", "SilverBack Sentry (Uganda \u2014 this platform)"];
 const clatWidths = [1500, 1150, 1250, 1150, 1250, 1150, 1900, 1900];
 
 const clatRows = [
@@ -269,7 +269,7 @@ function tamTable() {
 const section3 = [
   h("3. Commercial Viability", HeadingLevel.HEADING_1),
   h("3.1 Business Model Canvas", HeadingLevel.HEADING_2),
-  p([run("WildWatch's business model is built around a public-institution buyer (UWA) and a free community-facing service, so that no subsistence household is ever asked to pay to report a loss.")]),
+  p([run("SilverBack Sentry's business model is built around a public-institution buyer (UWA) and a free community-facing service, so that no subsistence household is ever asked to pay to report a loss.")]),
   bmcTable(),
 
   h("3.2 Cost Structure & Phased Plan", HeadingLevel.HEADING_2),
@@ -309,7 +309,7 @@ function teamTable() {
     tableHeader: true,
     children: [
       cell("Name", { bold: true, shade: GREEN, color: "FFFFFF", width: 2600 }),
-      cell("Role on WildWatch", { bold: true, shade: GREEN, color: "FFFFFF", width: 3200 }),
+      cell("Role on SilverBack Sentry", { bold: true, shade: GREEN, color: "FFFFFF", width: 3200 }),
       cell("Relevant Expertise", { bold: true, shade: GREEN, color: "FFFFFF", width: 3700 }),
     ],
   });
@@ -328,7 +328,7 @@ const section4 = [
   teamTable(),
 
   h("4.2 Prospective Partnerships", HeadingLevel.HEADING_2),
-  p([run("WildWatch has not yet entered any formal partnership agreements. The organisations below are prospective partners the team intends to approach during the pilot phase, listed to show a credible engagement pathway rather than a confirmed relationship:")]),
+  p([run("SilverBack Sentry has not yet entered any formal partnership agreements. The organisations below are prospective partners the team intends to approach during the pilot phase, listed to show a credible engagement pathway rather than a confirmed relationship:")]),
   bullet(boldLead("Uganda Wildlife Authority (UWA) \u2014 ", "prospective institutional adopter and primary data owner; formal engagement to begin with a pilot-scope discussion.")),
   bullet(boldLead("Kitgum District and neighbouring buffer-zone local governments \u2014 ", "prospective pilot sites, given the backlog already documented there.")),
   bullet(boldLead("Mobile network operators \u2014 ", "prospective SMS-gateway partners to enable the feature-phone reporting channel.")),
@@ -398,6 +398,6 @@ const doc = new Document({
 });
 
 Packer.toBuffer(doc).then((buf) => {
-  require("fs").writeFileSync("/home/claude/work/WildWatch_Concept_Document.docx", buf);
+  require("fs").writeFileSync("/home/claude/work/SilverBack_Sentry_Concept_Document.docx", buf);
   console.log("written");
 });

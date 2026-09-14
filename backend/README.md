@@ -1,10 +1,10 @@
-# WildWatch Backend
+# SilverBack Sentry Backend
 
-Laravel 13 + Sanctum API for the WildWatch admin/warden portal. Serves the React frontend (`../frontend/`) with parks, species, rangers, incidents, SOS alerts, compensation claims, evidence forms, news articles, and the Firebase-to-Laravel bridge webhooks that keep this database and the mobile app's Firestore data reconciled.
+Laravel 13 + Sanctum API for the SilverBack Sentry admin/warden portal. Serves the React frontend (`../frontend/`) with parks, species, rangers, incidents, SOS alerts, compensation claims, evidence forms, news articles, and the Firebase-to-Laravel bridge webhooks that keep this database and the mobile app's Firestore data reconciled.
 
 ## What this is for
 
-This is the relational side of WildWatch's two-backend architecture: the mobile app (`android-native-master-branch/`) is offline-first against Firebase/Firestore, while this API is the system of record for anything genuinely relational — compensation claims that reference incidents that reference ranger assignments, with payments and an audit trail hanging off claims. A Cloud Function bridges mobile-originated writes (incidents, sightings, SOS alerts) into this database via signed webhooks; this API's own model observers push portal-originated changes (status updates, claim decisions) back out to Firestore so the mobile app's real-time listeners see them. The full field-level mapping, including which system is authoritative for which entity, is in `/home/geto/Projects/Documentations/WildWatch/root-contracts/BRIDGE-CONTRACT.md`.
+This is the relational side of SilverBack Sentry's two-backend architecture: the mobile app (`android-native-master-branch/`) is offline-first against Firebase/Firestore, while this API is the system of record for anything genuinely relational — compensation claims that reference incidents that reference ranger assignments, with payments and an audit trail hanging off claims. A Cloud Function bridges mobile-originated writes (incidents, sightings, SOS alerts) into this database via signed webhooks; this API's own model observers push portal-originated changes (status updates, claim decisions) back out to Firestore so the mobile app's real-time listeners see them. The full field-level mapping, including which system is authoritative for which entity, is in `/home/geto/Projects/Documentations/WildWatch/root-contracts/BRIDGE-CONTRACT.md`.
 
 Who can do what in the portal is governed by a role model with several distinct roles (System Administrator, UWA Official, Park Warden, Gamepark Officer, Ranger, Community Wildlife Officer, and public/community accounts), expressed as a handful of route-level middleware aliases rather than one blanket admin gate. `/home/geto/Projects/Documentations/WildWatch/root-contracts/REPOS.md`'s `web-portal/` section has the current auth-mapping write-up — which middleware alias gates which route group, and how it maps onto the underlying role names.
 
@@ -30,7 +30,7 @@ The feature test suite runs against an in-memory SQLite database and does not re
 
 Webhook routes under `/api/webhooks/` are authenticated by an HMAC signature header rather than Sanctum — `FIREBASE_BRIDGE_SECRET` must match the value configured on the Firebase Functions side exactly, in every environment. Routes under `/api/mobile/` instead authenticate via a Firebase ID token (the live Firebase project is on the Spark plan and can't run the Cloud Function that would otherwise sign HMAC webhook calls, so the mobile app calls Laravel directly). See `/home/geto/Projects/Documentations/WildWatch/root-contracts/BRIDGE-CONTRACT.md` for the full contract: which fields map to which, which system is authoritative for what, and how echo prevention keeps a webhook-originated write from bouncing back out as a second webhook call.
 
-A Postman collection covering this API's full route surface, including example request bodies and a self-signing setup for the webhook routes, is at `wildwatch.json` in this directory's root.
+A Postman collection covering this API's full route surface, including example request bodies and a self-signing setup for the webhook routes, is at `silverback-sentry.json` in this directory's root.
 
 ## CI/CD and recent schema changes
 

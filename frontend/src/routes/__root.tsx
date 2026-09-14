@@ -75,7 +75,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
-    title: "WildWatch Portal",
+    title: "SilverBack Sentry Portal",
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
@@ -103,15 +103,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         name: "description",
         content: "Administrative portal for wildlife protection and incident management.",
       },
-      { name: "author", content: "WildWatch" },
-      { property: "og:title", content: "WildWatch Portal" },
+      { name: "author", content: "SilverBack Sentry" },
+      { property: "og:title", content: "SilverBack Sentry Portal" },
       {
         property: "og:description",
         content: "Administrative portal for wildlife protection and incident management.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:title", content: "WildWatch Portal" },
+      { name: "twitter:title", content: "SilverBack Sentry Portal" },
       {
         name: "twitter:description",
         content: "Administrative portal for wildlife protection and incident management.",
