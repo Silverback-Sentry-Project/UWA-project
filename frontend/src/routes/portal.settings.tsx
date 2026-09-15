@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { PortalShell, StatusBadge } from "@/components/portal/PortalShell";
 import { apiFetch, ApiError } from "@/lib/api";
 import type { Paginated } from "@/lib/api-types";
-import { ShieldCheck, UserPlus } from "lucide-react";
+import { UserPlus } from "lucide-react";
 import { useState } from "react";
 import { usePark } from "@/lib/park-context";
 
@@ -69,7 +69,6 @@ function Personnel() {
   });
 
   const people = data?.data ?? [];
-  const active = people.filter((p) => p.account_status === "Active").length;
 
   function openInvite() {
     setFirstName("");
@@ -129,29 +128,6 @@ function Personnel() {
         </button>
       }
     >
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <div className="portal-card p-4">
-          <div className="flex items-center gap-2 text-[var(--p-olive-deep)]">
-            <ShieldCheck size={16} />
-            <span className="text-[12px] font-semibold uppercase tracking-wider">
-              Active accounts
-            </span>
-          </div>
-          <div className="mt-2 portal-display text-2xl font-bold">{active}</div>
-          <div className="text-[11px] text-[var(--p-ink-soft)]">of {people.length} shown</div>
-        </div>
-        <div className="portal-card p-4">
-          <div className="flex items-center gap-2 text-[var(--p-olive-deep)]">
-            <ShieldCheck size={16} />
-            <span className="text-[12px] font-semibold uppercase tracking-wider">
-              Data transport
-            </span>
-          </div>
-          <div className="mt-2 portal-display text-2xl font-bold">HTTPS</div>
-          <div className="text-[11px] text-[var(--p-ink-soft)]">Recommended in production</div>
-        </div>
-      </div>
-
       <div className="flex items-center gap-2 mb-3">
         <select
           className="portal-input w-56"
@@ -254,7 +230,7 @@ function Personnel() {
                     ))}
                   </td>
                   <td className="text-neutral-400 font-bold text-[11px] uppercase tracking-wider">
-                    {p.park?.park_name ?? "HQ / GLOBAL"}
+                    {p.park?.park_name ?? "Global (not park-specific)"}
                   </td>
                   <td className="text-right pr-6">
                     <StatusBadge status={p.account_status} />

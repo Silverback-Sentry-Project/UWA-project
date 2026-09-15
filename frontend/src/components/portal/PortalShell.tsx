@@ -10,7 +10,6 @@ import {
   Users,
   Newspaper,
   Bell,
-  Database,
   ChevronDown,
   LogOut,
   ChevronRight,
@@ -20,6 +19,7 @@ import {
   AlertTriangle,
   Play,
   Zap,
+  Ban,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { usePark } from "@/lib/park-context";
@@ -79,12 +79,6 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
         label: "Personnel",
         icon: Users,
         hint: "Manage accounts & invite staff",
-      },
-      {
-        to: "/portal/data-sources",
-        label: "Data Sources",
-        icon: Database,
-        hint: "Reference data provenance & verification",
       },
     ],
   },
@@ -170,7 +164,7 @@ export function PortalShell({
               SilverBack Sentry
             </div>
             <div className="text-[10px] uppercase tracking-[0.1em] text-white/50 font-semibold">
-              HQ Control
+              Command Center
             </div>
           </div>
         </div>
@@ -321,7 +315,7 @@ export function PortalShell({
         <div className="px-8 pt-8 pb-6 shrink-0">
           <div className="flex items-center gap-2 text-[11px] text-neutral-400 font-bold uppercase tracking-[0.1em] mb-2">
             <Link to="/portal/dashboard" className="hover:text-[#1A2F1A] transition-colors">
-              HQ
+              Dashboard
             </Link>
             {section && (
               <>
@@ -443,6 +437,7 @@ export function StatusBadge({ status }: { status: string }) {
     Resolved: { bg: "oklch(0.95 0.04 150)", fg: "oklch(0.4 0.1 150)", icon: CheckCircle2 },
     Pending: { bg: "oklch(0.95 0.03 90)", fg: "oklch(0.5 0.1 90)", icon: Clock },
     Responding: { bg: "oklch(0.96 0.03 85)", fg: "oklch(0.45 0.13 85)", icon: Zap },
+    Cancelled: { bg: "oklch(0.94 0.005 120)", fg: "oklch(0.45 0.01 120)", icon: Ban },
     Available: { bg: "oklch(0.95 0.04 150)", fg: "oklch(0.4 0.1 150)", icon: CheckCircle2 },
     "On patrol": { bg: "oklch(0.96 0.03 85)", fg: "oklch(0.45 0.13 85)", icon: Zap },
     "Off-duty": { bg: "oklch(0.94 0.005 120)", fg: "oklch(0.45 0.01 120)", icon: Clock },

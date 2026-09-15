@@ -33,7 +33,7 @@ class SosAlertController extends Controller
     public function updateStatus(Request $request, SosAlert $sosAlert)
     {
         $validator = Validator::make($request->all(), [
-            'status' => ['required', 'in:Pending,Responding,Resolved'],
+            'status' => ['required', 'in:Pending,Responding,Resolved,Cancelled'],
         ]);
 
         if ($validator->fails()) {

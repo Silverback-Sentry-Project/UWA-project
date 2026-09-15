@@ -2,12 +2,12 @@
 
 namespace Database\Seeders;
 
-use App\Models\Incident;
 use App\Models\Park;
 use App\Models\Role;
 use App\Models\Species;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -138,6 +138,8 @@ class DatabaseSeeder extends Seeder
         }
 
         $this->seedIncidents($official);
+        $this->seedNotifications();
+        $this->seedNewsArticles($official);
 
         $admin = User::firstOrCreate(
             ['email' => 'admin@wildwatch.app'],
@@ -159,72 +161,28 @@ class DatabaseSeeder extends Seeder
 
     private function seedIncidents(User $official): void
     {
-        $incidentTypes = [
-            'Crop Damage', 'Livestock Loss', 'Property Damage',
-            'Wildlife Sighting', 'Human Injury',
-        ];
+        // Demo/QA dataset is deliberately scoped to a single game park (Bwindi Impenetrable)
+        // so cross-system manual testing has one predictable set of incident data - parks stay
+        // in the registry but only Bwindi carries seeded incidents. Was previously 5-10
+        // incidents per park across all 10 parks; the user requested Bwindi-only.
+        $park = Park::where('firestore_id', 'bwindi-impenetrable')->firstOrFail();
 
+        // Keep the exact correlated Firestore doc contract (seed-{park.firestore_id}-incident-1
+        // with source_system 'firestore', status 'New') - the portal and Firebase bridge rely
+        // on it for cross-system manual testing (see BridgeFixturesSeederTest and
+        // BRIDGE-CONTRACT.md's "Seed fixture ID mapping").
+        $incidentTypes = ['Wildlife Sighting', 'Crop Damage', 'Livestock Loss', 'Property Damage', 'Human Injury', 'SOS'];
+
+        // 'Escalated' is a boolean (is_escalated) since 2026-08-11; the status enum no
+        // longer contains it (see add_is_escalated_to_incidents_table migration).
         $statuses = ['New', 'Assigned', 'In Progress', 'Resolved'];
 
-        $locationTemplates = [
-            'Kanungu' => [
-                ['sub_county' => 'Kayonza', 'parish' => 'Buhoma', 'village' => 'Buhoma Village'],
-                ['sub_county' => 'Kanyantorogo', 'parish' => 'Nkuringo', 'village' => 'Nkuringo'],
-                ['sub_county' => 'Butogota', 'parish' => 'Rubona', 'village' => 'Rubona'],
-            ],
-            'Kisoro' => [
-                ['sub_county' => 'buskimbiri', 'parish' => 'nteeko', 'village' => 'Nteeko'],
-                ['sub_county' => 'nyabweishenya', 'parish' => 'rugongwe', 'village' => 'Rugongwe'],
-                ['sub_county' => 'rubuguri_town_council', 'parish' => 'rushaaga', 'village' => 'Rushaaga'],
-            ],
-            'Kasese' => [
-                ['sub_county' => 'Kasese Municipality', 'parish' => 'Nyamwamba', 'village' => 'Nyamwamba'],
-                ['sub_county' => 'Katwe-Kabatoro', 'parish' => 'Katwe', 'village' => 'Katwe Village'],
-                ['sub_county' => 'Hima', 'parish' => 'Ibanda-Kyanya', 'village' => 'Ibanda'],
-            ],
-            'Masindi' => [
-                ['sub_county' => 'Masindi Municipality', 'parish' => 'Central', 'village' => 'Karujubu'],
-                ['sub_county' => 'Pakanyi', 'parish' => 'Pakanyi', 'village' => 'Pakanyi Village'],
-                ['sub_county' => 'Budongo', 'parish' => 'Nyabyeya', 'village' => 'Nyabyeya'],
-            ],
-            'Kabarole' => [
-                ['sub_county' => 'Fort Portal City', 'parish' => 'Municipal', 'village' => 'Municipal Ward'],
-                ['sub_county' => 'Bukuku', 'parish' => 'Bukuku', 'village' => 'Bukuku Village'],
-                ['sub_county' => 'Ruteete', 'parish' => 'Ruteete', 'village' => 'Ruteete'],
-            ],
-            'Bundibugyo' => [
-                ['sub_county' => 'Bundibugyo Town Council', 'parish' => 'Bundibugyo', 'village' => 'Bundibugyo'],
-                ['sub_county' => 'Ntandi', 'parish' => 'Ntandi', 'village' => 'Ntandi Village'],
-                ['sub_county' => 'Bubukwanga', 'parish' => 'Bubukwanga', 'village' => 'Bubukwanga'],
-            ],
-            'Kiruhura' => [
-                ['sub_county' => 'rushasha', 'parish' => 'mirambiro', 'village' => 'Mirambiro'],
-                ['sub_county' => 'rugaga', 'parish' => 'kashojwa', 'village' => 'Kashojwa'],
-                ['sub_county' => 'kabingo', 'parish' => 'kyarugaju', 'village' => 'Kyarugaju'],
-            ],
-            'Kaabong' => [
-                ['sub_county' => 'Kaabong Town Council', 'parish' => 'Kaabong', 'village' => 'Kaabong'],
-                ['sub_county' => 'Karenga', 'parish' => 'Karenga', 'village' => 'Karenga Village'],
-                ['sub_county' => 'Loyoro', 'parish' => 'Loyoro', 'village' => 'Loyoro'],
-            ],
-            'Mbale' => [
-                ['sub_county' => 'Mbale City', 'parish' => 'Industrial Division', 'village' => 'Industrial Ward'],
-                ['sub_county' => 'Budadiri', 'parish' => 'Budadiri', 'village' => 'Budadiri Village'],
-                ['sub_county' => 'Bubulo', 'parish' => 'Bubulo', 'village' => 'Bubulo'],
-            ],
-        ];
+        $severities = ['low', 'medium', 'high', 'light'];
 
-        $parkCoords = [
-            'Bwindi Impenetrable National Park' => [-1.05, 29.70],
-            'Mgahinga Gorilla National Park' => [-1.37, 29.65],
-            'Queen Elizabeth National Park' => [-0.20, 30.00],
-            'Murchison Falls National Park' => [2.27, 31.77],
-            'Kibale National Park' => [0.50, 30.40],
-            'Semuliki National Park' => [0.85, 30.10],
-            'Rwenzori Mountains National Park' => [0.38, 29.98],
-            'Lake Mburo National Park' => [-0.61, 30.97],
-            'Kidepo Valley National Park' => [3.92, 33.86],
-            'Mount Elgon National Park' => [1.12, 34.17],
+        $locations = [
+            ['sub_county' => 'Kayonza', 'parish' => 'Buhoma', 'village' => 'Buhoma Village'],
+            ['sub_county' => 'Kanyantorogo', 'parish' => 'Nkuringo', 'village' => 'Nkuringo'],
+            ['sub_county' => 'Butogota', 'parish' => 'Rubona', 'village' => 'Rubona'],
         ];
 
         $descriptions = [
@@ -233,54 +191,153 @@ class DatabaseSeeder extends Seeder
             'Livestock killed by predators near park boundary.',
             'Crop damage reported by local farmer.',
             'Wildlife sighting reported by community member.',
-            'Property fence damaged by wildlife.',
+            'Gorilla family crossed into community farmland — safari rangers responded.',
             'Human injury reported after wildlife encounter.',
             'Repeated crop raids in the last week.',
             'Community reported loud animal activity at night.',
             'Farmer lost several goats to wildlife.',
         ];
 
-        foreach (Park::all() as $parkIndex => $park) {
-            $district = $park->district;
-            $locations = $locationTemplates[$district] ?? [
-                ['sub_county' => 'Central', 'parish' => 'Central Parish', 'village' => 'Central Village'],
-            ];
-            [$baseLat, $baseLng] = $parkCoords[$park->park_name] ?? [0.0, 32.0];
+        [$baseLat, $baseLng] = [-1.05, 29.70];
 
-            $incidentCount = 5 + ($parkIndex % 6);
+        // Warm shade over the demo set so incidents don't all share the same instant and make
+        // the portal's recent-incidents table look flat.
+        $start = now()->subDays(6);
 
-            for ($i = 0; $i < $incidentCount; $i++) {
-                $location = $locations[$i % count($locations)];
+        for ($i = 0; $i < 8; $i++) {
+            $location = $locations[$i % count($locations)];
 
-                // The first incident per park is deterministically correlated to the matching
-                // Firestore seed doc (android-native-backend-branch/scripts/seed.ts's
-                // seedIncidents(): `seed-{park.firestore_id}-incident-1`) - see
-                // BRIDGE-CONTRACT.md's "Seed fixture ID mapping". This makes cross-system
-                // manual testing possible without depending on the live Cloud Functions bridge
-                // actually running during seeding; the rest stay Laravel-only demo volume.
-                $isBridgeCorrelated = $i === 0 && $park->firestore_id;
+            $isBridgeCorrelated = $i === 0;
 
-                Incident::firstOrCreate(
-                    [
-                        'park_id' => $park->park_id,
-                        'description' => $descriptions[$i % count($descriptions)]." ({$park->park_name})",
-                    ],
-                    [
-                        'reported_by' => $official->user_id,
-                        'incident_type' => $incidentTypes[$i % count($incidentTypes)],
-                        'latitude' => $baseLat + (($i * 0.01) - 0.02),
-                        'longitude' => $baseLng + (($i * 0.01) - 0.02),
-                        'village' => $location['village'],
-                        'district' => $district,
-                        'sub_county' => $location['sub_county'],
-                        'parish' => $location['parish'],
-                        'status' => $statuses[$i % count($statuses)],
-                        'is_escalated' => $i % 5 === 4,
-                        'firestore_doc_id' => $isBridgeCorrelated ? "seed-{$park->firestore_id}-incident-1" : null,
-                        'source_system' => $isBridgeCorrelated ? 'firestore' : 'laravel',
-                    ]
-                );
-            }
+            // Incidents are written through the query builder, not the model: firing the
+            // IncidentObserver on every created would notify portal staff and echo to the
+            // Firestore emulator per-row, which both inflates the notification count past the
+            // "at most 5" target and makes seeding depend on the emulator being up.
+            DB::table('incidents')->insert([
+                'reported_by' => $official->user_id,
+                'park_id' => $park->park_id,
+                'incident_type' => $incidentTypes[$i % count($incidentTypes)],
+                'severity' => $severities[$i % count($severities)],
+                'description' => $descriptions[$i % count($descriptions)],
+                'latitude' => $baseLat + ((($i + 1) % 5) * 0.012) - 0.03,
+                'longitude' => $baseLng + ((($i + 2) % 5) * 0.011) - 0.03,
+                'village' => $location['village'],
+                'district' => $park->district,
+                'sub_county' => $location['sub_county'],
+                'parish' => $location['parish'],
+                'status' => $statuses[$i % count($statuses)],
+                'is_escalated' => $i % 5 === 4,
+                'firestore_doc_id' => $isBridgeCorrelated ? "seed-{$park->firestore_id}-incident-1" : null,
+                'source_system' => $isBridgeCorrelated ? 'firestore' : 'laravel',
+                'created_at' => $start->copy()->addHours($i * 13),
+            ]);
         }
+    }
+
+    private function seedNotifications(): void
+    {
+        // At most 5 sample notifications for the portal bell, addressed to the park warden
+        // (portal-eligible Park Warden account from BridgeFixturesSeeder).
+        $warden = User::where('email', 'warden@wildwatch.app')->first();
+        if ($warden === null) {
+            return; // bridge fixtures didn't run - nothing sensible to notify
+        }
+
+        $now = now();
+
+        $rows = [
+            ['SOS', 'Urgent: Elephant encounter near Buhoma', 'A lone elephant was spotted approaching Buhoma Village at 06:10. Advise keeping clear of the park boundary until rangers resolve.', $now->copy()->subHours(2)],
+            ['Incident', 'Crop damage reported at Rubona', 'A farmer on the Rubona boundary reported pre-dawn crop damage. A ranger team is being dispatched to assess.', $now->copy()->subHours(9)],
+            ['Assignment', 'Ranger assigned to sighting N-14', 'Ranger 2 was assigned to the gorilla sighting reported near Nkuringo. Expected to file a report within 24h.', $now->copy()->subHours(16)],
+            ['Compensation', 'Claim CLM-1027 approved', 'UGX 750,000 compensation approved for livestock loss at Kayonza. Payment will be processed this week.', $now->copy()->subDays(1)->subHours(3)],
+            ['General', 'Weekly park briefing available', 'The weekly Bwindi park briefing (gorilla counts, boundary patrols, community engagements) is now available in the portal.', $now->copy()->subDays(2)->subHours(5)],
+        ];
+
+        foreach ($rows as $offset => [$type, $title, $message, $createdAt]) {
+            DB::table('notifications')->insert([
+                'user_id' => $warden->user_id,
+                'title' => $title,
+                'message' => $message,
+                'notification_type' => $type,
+                'is_read' => $offset !== 0,
+                'created_at' => $createdAt,
+            ]);
+        }
+    }
+
+    private function seedNewsArticles(User $official): void
+    {
+        // At most 5 news-feed articles, authored by the UWA official and all tied to the
+        // single seeded park (Bwindi). The NewsArticleObserver normally mirrors published
+        // articles to Firestore's /feed collection on create - suppressed here so seeding
+        // doesn't depend on the Firestore emulator being up, which would otherwise throw
+        // when the bridge isn't running. The portal reads its feed from Postgres directly.
+        $park = Park::where('firestore_id', 'bwindi-impenetrable')->first();
+
+        $articles = [
+            [
+                'title' => 'Ranger patrols intensify along Bwindi’s eastern boundary',
+                'excerpt' => 'UWA has deployed additional boundary patrols after a spike in crop-raiding reports around Kayonza.',
+                'body' => 'Following several nights of elephant activity along the forest edge, Uganda Wildlife Authority rangers have stepped up patrols on the eastern boundary of Bwindi Impenetrable National Park. Community liaison officers are also holding meetings in Kayonza and Rubona to coordinate response times. Early signs indicate the additional presence is reducing overnight incursions.',
+                'category' => 'Boundary & Community',
+                'theme' => 'SECURITY',
+                'published_at' => now()->subDays(2)->subHours(4),
+                'read_time' => '3 min',
+            ],
+            [
+                'title' => 'New gorilla family opens for habituation in Rushaga sector',
+                'excerpt' => 'A previously unhabituated gorilla group has been prepared for visitor tracking, expanding trekking capacity.',
+                'body' => 'Another gorilla group in the Rushaga sector has completed habituation and will open for visitor tracking next month. The addition increases available trekking permits and spreads tourist pressure across more groups. Trackers describe the family as calm and well-accustomed to researchers.',
+                'category' => 'Wildlife',
+                'theme' => 'WILDLIFE',
+                'published_at' => now()->subDays(4)->subHours(2),
+                'read_time' => '4 min',
+            ],
+            [
+                'title' => 'Community tree planting restores buffer around Nkuringo',
+                'excerpt' => 'Local households joined UWA to plant 2,000 seedlings along the Nkuringo boundary.',
+                'body' => 'Over two days, more than 300 community members planted 2,000 indigenous seedlings along the Nkuringo forest boundary. The exercise is part of an ongoing buffer restoration programme that reduces erosion and gives farmers shade crops near the park edge.',
+                'category' => 'Conservation',
+                'theme' => 'FOREST',
+                'published_at' => now()->subDays(6)->subHours(1),
+                'read_time' => '2 min',
+            ],
+            [
+                'title' => 'Park officials confirm gorilla group sightings during Rushaga trek',
+                'excerpt' => 'Trackers confirm consistent sightings of the Rushegura family as dry-season viewing begins.',
+                'body' => 'With the dry season underway, habituated gorilla groups in the Rushaga sector continue to be sighted consistently. Trackers recorded a full morning with the Rushegura family, giving trekkers extended viewing time. Officials remind visitors to book permits in advance as slots fill quickly.',
+                'category' => 'Tourism',
+                'theme' => 'SUNSET',
+                'published_at' => now()->subDays(8)->subHours(6),
+                'read_time' => '3 min',
+            ],
+            [
+                'title' => 'Weather outlook: clear skies expected for the coming weekend',
+                'excerpt' => 'Meteorological forecasts point to a clear, dry weekend across Kanungu, ideal for gorilla trekking.',
+                'body' => 'The weekend outlook for Kanungu district shows generally clear skies with low rain probability, making conditions ideal for gorilla trekking and boundary patrols. Visitors are advised to still carry rain gear as mountain conditions can change quickly. Trackers will continue monitoring the forest paths.',
+                'category' => 'Weather',
+                'theme' => 'SKY',
+                'published_at' => now()->subDays(10)->subHours(2),
+                'read_time' => '2 min',
+            ],
+        ];
+
+        DB::table('news_articles')->insert(
+            collect($articles)->map(function (array $a) use ($official, $park) {
+                return [
+                    'author_id' => $official->user_id,
+                    'park_id' => $park?->park_id,
+                    'title' => $a['title'],
+                    'excerpt' => $a['excerpt'],
+                    'body' => $a['body'],
+                    'category' => $a['category'],
+                    'source' => 'Uganda Wildlife Authority',
+                    'read_time' => $a['read_time'],
+                    'theme' => $a['theme'],
+                    'published' => true,
+                    'published_at' => $a['published_at'],
+                ];
+            })->all()
+        );
     }
 }
