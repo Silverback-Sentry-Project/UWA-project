@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "SilverBack Sentry Portal API",
-    "description": "Covers the full web-portal/backend API surface (routes/api.php): admin-portal auth, incidents, SOS alerts, users/rangers, news articles, compensation claims, forwarded forms, the Gamepark portal, and the Firebase→Laravel webhook bridge. See BRIDGE-CONTRACT.md for the bridge's field-mapping contract and REPOS.md/AGENTS.md for the wider project map.\n\nSetup:\n1. Run the 'Login' request first (Auth folder) - its test script saves the returned token into the `bearer_token` collection variable automatically, so every other authenticated request just works afterward.\n2. Webhook requests sign themselves automatically from the `webhook_secret` collection variable (see the Webhooks folder's pre-request script) - set it to match `FIREBASE_BRIDGE_SECRET` in your backend/.env.",
+    "description": "Covers the full warden-web-portal/backend API surface (routes/api.php): admin-portal auth, incidents, SOS alerts, users/rangers, news articles, compensation claims, forwarded forms, the Gamepark portal, and the Firebase→Laravel webhook bridge. See BRIDGE-CONTRACT.md for the bridge's field-mapping contract and REPOS.md/AGENTS.md for the wider project map.\n\nSetup:\n1. Run the 'Login' request first (Auth folder) - its test script saves the returned token into the `bearer_token` collection variable automatically, so every other authenticated request just works afterward.\n2. Webhook requests sign themselves automatically from the `webhook_secret` collection variable (see the Webhooks folder's pre-request script) - set it to match `FIREBASE_BRIDGE_SECRET` in your backend/.env.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [

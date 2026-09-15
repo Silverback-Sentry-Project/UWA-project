@@ -24,7 +24,7 @@ class UserController extends Controller
     private const GAMEPARK_INVITABLE_ROLES = ['Ranger', 'Community Wildlife Officer', 'Park Warden'];
 
     // Portal roles that have a corresponding role in the mobile app's Firebase custom
-    // claims (see android-native-master-branch's UserRole.kt / AuthRepositoryImpl.mapRole)
+    // claims (see ranger-android-app's UserRole.kt / AuthRepositoryImpl.mapRole)
     // - an invited user in one of these roles also gets a Firebase Auth account
     // provisioned so they can sign in to the mobile app with the same email.
     // Community Wildlife Officer/System Administrator/Gamepark Officer have no mobile
