@@ -15,14 +15,14 @@ interface SosAlert {
   sos_id: number;
   emergency_type: string;
   description: string | null;
-  status: "Pending" | "Responding" | "Resolved";
+  status: "Pending" | "Responding" | "Resolved" | "Cancelled";
   created_at: string;
   resolved_at: string | null;
   reporter?: { first_name: string; last_name: string } | null;
   park?: { park_name: string } | null;
 }
 
-const STATUSES = ["Pending", "Responding", "Resolved"] as const;
+const STATUSES = ["Pending", "Responding", "Resolved", "Cancelled"] as const;
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleString("en-GB", {
     day: "2-digit",
@@ -143,7 +143,7 @@ function Conflicts() {
                     </span>
                   )}
                 </div>
-                {a.status !== "Resolved" && (
+                {a.status !== "Resolved" && a.status !== "Cancelled" && (
                   <div className="mt-6 flex gap-3">
                     {a.status === "Pending" && (
                       <button

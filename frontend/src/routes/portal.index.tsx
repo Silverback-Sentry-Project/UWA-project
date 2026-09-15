@@ -139,7 +139,7 @@ function PortalLogin() {
             </div>
 
             <p className="mt-12 text-[11px] text-[var(--p-ink-soft)] font-bold uppercase tracking-widest text-center leading-relaxed">
-              Encrypted End-to-End · HQ Mission Control
+              Encrypted End-to-End · Field Operations
             </p>
           </div>
 

@@ -332,6 +332,10 @@ class FirestoreSyncMapper
         return match (Str::lower((string) ($status ?? 'pending'))) {
             'responding', 'in_progress', 'in progress' => 'Responding',
             'resolved' => 'Resolved',
+            // Mobile HOLD TO CANCEL SOS writes "cancelled" (Firestore vocabulary); the enum
+            // now allows it so a withdrawn alert shows as Cancelled on the portal instead of
+            // looking like a stale active emergency.
+            'cancelled', 'canceled', 'withdrawn' => 'Cancelled',
             default => 'Pending',
         };
     }
